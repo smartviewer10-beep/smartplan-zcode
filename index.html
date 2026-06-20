@@ -1,0 +1,2331 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SmartPlan - Keuangan Pribadi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --p1:#6C63FF;--p2:#FF6584;--p3:#43CFAC;--p4:#FFB347;--p5:#54A0FF;
+  --income:#1DB97A;--expense:#FF5A5A;
+  --bg:#F4F6FF;--bg2:#EEF0FF;
+  --surface:#FFFFFF;--border:#E2E5F5;--border2:rgba(108,99,255,.15);
+  --txt1:#1A1D3A;--txt2:#5A5E82;--txt3:#9396B5;
+  --sidebar-w:256px;--topbar-h:68px;
+  --r1:10px;--r2:16px;--r3:24px;--r4:32px;
+  --tr:0.22s cubic-bezier(.4,0,.2,1);
+  --sh-card:0 2px 12px rgba(26,29,58,.06);
+  --sh-md:0 4px 20px rgba(108,99,255,.12);
+  --sh-lg:0 8px 40px rgba(108,99,255,.18);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt1);min-height:100vh;overflow-x:hidden;font-size:14px}
+input,select,textarea,button{font-family:inherit}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--p1);border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ── AUTH ── */
+#authScreen{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#F0F3FF 0%,#E8ECFF 40%,#F5F7FF 100%);padding:16px}
+.auth-card{background:#fff;border-radius:var(--r4);padding:40px 36px;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(108,99,255,.12),0 2px 8px rgba(26,29,58,.06),0 0 0 1px #EEF0F8;text-align:center;animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes popIn{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}
+.auth-logo{width:64px;height:64px;background:linear-gradient(135deg,#6C63FF,#5B52E8);border-radius:18px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 8px 24px rgba(108,99,255,.35)}
+.auth-title{font-family:'Inter',sans-serif;font-size:20px;font-weight:800;color:#1A1D3A;margin-bottom:6px;letter-spacing:-.4px}
+.auth-sub{font-size:13px;color:#8085A8;margin-bottom:28px;line-height:1.5}
+.pin-dots{display:flex;justify-content:center;gap:14px;margin-bottom:28px}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:#E2E5F5;border:2px solid #E2E5F5;transition:var(--tr)}
+.pin-dot.filled{background:#6C63FF;border-color:#6C63FF;transform:scale(1.2)}
+.pin-dot.error{background:var(--expense);border-color:var(--expense)}
+.pin-dot.ok{background:var(--income);border-color:var(--income)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.pin-btn{padding:15px 10px;border-radius:12px;border:1.5px solid #EEF0F8;background:#FAFBFF;font-size:18px;font-weight:700;color:#1A1D3A;cursor:pointer;transition:var(--tr);user-select:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:0 1px 3px rgba(108,99,255,.06)}
+.pin-btn:hover{background:#EEF0FF;border-color:#6C63FF;color:#6C63FF;transform:translateY(-1px);box-shadow:0 3px 10px rgba(108,99,255,.15)}
+.pin-btn:active{transform:scale(.95)}
+.pin-btn .ps{font-size:8px;font-weight:500;color:var(--txt3);letter-spacing:.5px}
+.pin-btn.del{background:rgba(255,90,90,.08);border-color:rgba(255,90,90,.2);color:var(--expense)}
+.pin-btn.zero{grid-column:2}
+.auth-msg{font-size:12px;font-weight:600;min-height:20px;color:#FF5A5A;margin-bottom:4px}
+.auth-hint{font-size:12px;color:var(--txt3);margin-top:4px}
+.auth-link{margin-top:12px;font-size:12px;color:var(--p1);cursor:pointer;text-decoration:underline}
+
+/* ── LOADING ── */
+#loadingScreen{position:fixed;inset:0;z-index:8999;background:linear-gradient(135deg,var(--p1) 0%,#5B52E8 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+#loadingScreen.gone{display:none}
+.load-logo{font-family:'Inter',sans-serif;font-size:36px;font-weight:700;color:#fff}
+.load-spin{width:40px;height:40px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── APP SHELL ── */
+#appShell{display:none;min-height:100vh}
+#appShell.visible{display:flex}
+
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--surface);border-right:1.5px solid var(--border);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:200;overflow-y:auto;overflow-x:hidden;transition:transform var(--tr)}
+.sb-brand{padding:20px 20px 16px;display:flex;align-items:center;gap:11px;border-bottom:1.5px solid var(--border);flex-shrink:0}
+.sb-brand-ico{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--p1),var(--p2));display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;box-shadow:0 4px 12px rgba(108,99,255,.3)}
+.sb-brand-name{font-family:'Inter',sans-serif;font-size:17px;font-weight:700;color:var(--txt1)}
+.sb-brand-ver{font-family:'DM Mono',monospace;font-size:9px;color:var(--txt3);letter-spacing:.8px}
+.sb-user{margin:14px 14px 8px;padding:12px 14px;background:linear-gradient(135deg,rgba(108,99,255,.08),rgba(255,101,132,.05));border:1.5px solid var(--border2);border-radius:var(--r2);display:flex;align-items:center;gap:10px}
+.sb-ava{width:34px;height:34px;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,var(--p1),var(--p5));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff}
+.sb-uname{font-size:13px;font-weight:700;color:var(--txt1)}
+.sb-utag{font-family:'DM Mono',monospace;font-size:9px;color:var(--p1)}
+.sb-month{margin:0 14px 10px;padding:8px 14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r1);display:flex;align-items:center;justify-content:space-between}
+.sb-mlabel{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt3)}
+.sb-mval{font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--p1)}
+.nav-sec{padding:12px 20px 6px;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--txt3)}
+.nav-menu{padding:0 10px;display:flex;flex-direction:column;gap:2px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r1);cursor:pointer;transition:var(--tr);color:var(--txt2);font-size:14px;font-weight:600;position:relative;white-space:nowrap}
+.nav-item:hover{background:var(--bg2);color:var(--txt1)}
+.nav-item.active{background:linear-gradient(90deg,rgba(108,99,255,.12),rgba(108,99,255,.04));color:var(--p1);border-right:3px solid var(--p1)}
+.nav-item .ni{width:20px;text-align:center;font-size:15px;flex-shrink:0}
+.nav-item .badge{margin-left:auto;color:#fff;font-size:9px;padding:1px 7px;border-radius:20px;font-family:'DM Mono',monospace;flex-shrink:0;background:var(--p1)}
+.nav-item .badge.red{background:var(--p2)}
+.sb-footer{margin-top:auto;padding:16px;border-top:1.5px solid var(--border);flex-shrink:0}
+.btn-logout{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border-radius:var(--r1);background:rgba(255,90,90,.06);border:1.5px solid rgba(255,90,90,.2);color:var(--expense);font-size:13px;font-weight:700;cursor:pointer;transition:var(--tr)}
+.btn-logout:hover{background:rgba(255,90,90,.12);border-color:rgba(255,90,90,.4)}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(26,29,58,.5);z-index:199;backdrop-filter:blur(2px)}
+.sidebar-overlay.show{display:block}
+
+/* ── MAIN ── */
+.main-area{margin-left:var(--sidebar-w);flex:1;min-width:0;display:flex;flex-direction:column;min-height:100vh}
+
+/* ── TOPBAR ── */
+.topbar{height:var(--topbar-h);background:var(--surface);border-bottom:1.5px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;z-index:100}
+.topbar-ham{display:none;width:36px;height:36px;border-radius:var(--r1);background:var(--bg2);border:1.5px solid var(--border);cursor:pointer;align-items:center;justify-content:center;font-size:15px;color:var(--txt2);flex-shrink:0}
+.tb-titles{flex:1;min-width:0}
+.tb-title{font-family:'Inter',sans-serif;font-size:18px;font-weight:700;color:var(--txt1);line-height:1.1}
+.tb-sub{font-size:11px;color:var(--txt3);margin-top:1px}
+.tb-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.month-pick{display:flex;align-items:center;gap:7px;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r1);padding:7px 12px;cursor:pointer}
+.month-pick select{background:transparent;border:none;outline:none;color:var(--txt1);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.month-pick select option{background:var(--surface)}
+.month-pick .fa{font-size:12px;color:var(--p1)}
+
+/* ── PAGE ── */
+.page{padding:24px;flex:1;display:none}
+.page.active{display:block}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--r1);font-size:13px;font-weight:700;cursor:pointer;transition:var(--tr);border:none;outline:none;white-space:nowrap}
+.btn-primary{background:linear-gradient(135deg,var(--p1),#5B52E8);color:#fff;box-shadow:0 4px 14px rgba(108,99,255,.35)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(108,99,255,.45)}
+.btn-primary:active{transform:scale(.97)}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--txt2)}
+.btn-outline:hover{border-color:var(--p1);color:var(--p1);background:rgba(108,99,255,.05)}
+.btn-danger{background:rgba(255,90,90,.08);border:1.5px solid rgba(255,90,90,.25);color:var(--expense)}
+.btn-danger:hover{background:rgba(255,90,90,.15)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-icon{width:32px;height:32px;padding:0;justify-content:center;font-size:13px}
+
+/* ── SUMMARY CARDS ── */
+.sum-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.s-card{border-radius:var(--r3);padding:20px;position:relative;overflow:hidden;transition:var(--tr);box-shadow:var(--sh-card);cursor:default}
+.s-card:hover{transform:translateY(-3px);box-shadow:var(--sh-md)}
+.s-card::after{content:'';position:absolute;bottom:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.12)}
+.s-card::before{content:'';position:absolute;top:-30px;left:-10px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.07)}
+.sc-bal{background:linear-gradient(135deg,#6C63FF 0%,#8B83FF 100%);color:#fff}
+.sc-inc{background:linear-gradient(135deg,#1DB97A 0%,#34D397 100%);color:#fff}
+.sc-exp{background:linear-gradient(135deg,#FF5A5A 0%,#FF8A8A 100%);color:#fff}
+.sc-sav{background:linear-gradient(135deg,#FFB347 0%,#FFCC80 100%);color:#fff}
+.sc-ico{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:12px;position:relative;z-index:1}
+.sc-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.8;margin-bottom:4px;position:relative;z-index:1}
+.sc-amt{font-family:'Inter',sans-serif;font-size:22px;font-weight:700;line-height:1;position:relative;z-index:1}
+.sc-meta{font-size:11px;opacity:.75;margin-top:5px;position:relative;z-index:1;display:flex;align-items:center;gap:4px}
+
+/* ── DEBT MINI CARDS ── */
+.debt-mini-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:20px}
+.debt-mini{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r2);padding:16px 20px;display:flex;align-items:center;gap:14px;box-shadow:var(--sh-card);transition:var(--tr)}
+.debt-mini:hover{transform:translateY(-2px);box-shadow:var(--sh-md)}
+.debt-mini.hutang-card{border-left:4px solid #FF5A5A}
+.debt-mini.piutang-card{border-left:4px solid #43CFAC}
+.dm-ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.dm-ico.h{background:rgba(255,90,90,.1)}
+.dm-ico.p{background:rgba(67,207,172,.1)}
+.dm-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);margin-bottom:3px}
+.dm-amt{font-family:'Inter',sans-serif;font-size:18px;font-weight:800}
+.dm-amt.h{color:#FF5A5A}
+.dm-amt.p{color:#43CFAC}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r3);overflow:hidden;box-shadow:var(--sh-card)}
+.card-hdr{padding:18px 20px 14px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1.5px solid var(--border);gap:8px}
+.card-hdr-t{font-family:'Inter',sans-serif;font-size:15px;font-weight:700;color:var(--txt1)}
+.card-hdr-s{font-size:11px;color:var(--txt3);margin-top:2px}
+.card-body{padding:18px 20px}
+
+/* ── CHARTS ── */
+.charts-row{display:grid;grid-template-columns:1.7fr 1fr;gap:14px;margin-bottom:20px}
+.btm-row{display:grid;grid-template-columns:1.7fr 1fr;gap:14px}
+.chart-wrap{position:relative;height:200px;width:100%}
+.chart-wrap-sm{position:relative;height:180px;width:100%}
+
+/* ── DONUT ── */
+.donut-sec{display:flex;align-items:center;gap:16px;padding:16px 20px}
+.donut-leg{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0}
+.leg-row{display:flex;align-items:center;gap:7px;font-size:12px}
+.leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.leg-name{flex:1;color:var(--txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.leg-pct{font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--txt1)}
+
+/* ── TX TABLE ── */
+.tx-table{width:100%;border-collapse:collapse}
+.tx-table th{padding:10px 16px;font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--txt3);text-align:left;background:var(--bg2);border-bottom:1.5px solid var(--border)}
+.tx-table td{padding:13px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tx-table tr:last-child td{border-bottom:none}
+.tx-table tr:hover td{background:var(--bg2)}
+.tx-table tr{transition:var(--tr)}
+.tx-desc{font-weight:700;font-size:13px;color:var(--txt1)}
+.tx-note{font-size:11px;color:var(--txt3);margin-top:1px}
+.tx-contact{font-size:10px;color:var(--p1);margin-top:2px;font-weight:600}
+.tx-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;background:var(--bg2);border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--txt2);white-space:nowrap}
+.tx-badge.sub-hutang{background:rgba(255,90,90,.08);border-color:rgba(255,90,90,.2);color:var(--expense)}
+.tx-badge.sub-piutang{background:rgba(67,207,172,.08);border-color:rgba(67,207,172,.2);color:var(--p3)}
+.tx-date{font-family:'DM Mono',monospace;font-size:11px;color:var(--txt3);white-space:nowrap}
+.tx-amt{font-family:'DM Mono',monospace;font-size:13px;font-weight:700;white-space:nowrap}
+.tx-amt.inc{color:var(--income)}
+.tx-amt.exp{color:var(--expense)}
+.tx-acts{display:flex;gap:5px;opacity:0;transition:var(--tr)}
+tr:hover .tx-acts{opacity:1}
+
+/* ── CAT BARS ── */
+.cat-bars{display:flex;flex-direction:column;gap:12px}
+.cb-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.cb-name{font-size:12px;font-weight:700;color:var(--txt1);display:flex;align-items:center;gap:5px}
+.cb-amt{font-family:'DM Mono',monospace;font-size:11px;color:var(--txt2)}
+.cb-track{height:5px;background:var(--bg2);border-radius:10px;overflow:hidden}
+.cb-fill{height:100%;border-radius:10px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+
+/* ── FILTER BAR ── */
+.filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.chip{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);font-size:12px;font-weight:700;color:var(--txt2);cursor:pointer;transition:var(--tr);white-space:nowrap}
+.chip:hover{border-color:var(--p1);color:var(--p1)}
+.chip.active{background:var(--p1);border-color:var(--p1);color:#fff;box-shadow:0 3px 10px rgba(108,99,255,.3)}
+.chip.inc.active{background:var(--income);border-color:var(--income);box-shadow:0 3px 10px rgba(29,185,122,.3)}
+.chip.exp.active{background:var(--expense);border-color:var(--expense);box-shadow:0 3px 10px rgba(255,90,90,.3)}
+.chip.h.active{background:var(--expense);border-color:var(--expense)}
+.chip.p.active{background:var(--p3);border-color:var(--p3)}
+.chip.done.active{background:var(--txt3);border-color:var(--txt3)}
+.search-box{margin-left:auto;display:flex;align-items:center;gap:7px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r1);padding:7px 12px}
+.search-box:focus-within{border-color:var(--p1)}
+.search-box input{background:transparent;border:none;outline:none;color:var(--txt1);font-size:13px;width:160px}
+.search-box input::placeholder{color:var(--txt3)}
+
+/* ── BUDGET ── */
+.budget-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.b-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r2);padding:18px;transition:var(--tr);box-shadow:var(--sh-card)}
+.b-card:hover{transform:translateY(-2px);box-shadow:var(--sh-md)}
+.bc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.bc-cat{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:700;color:var(--txt1)}
+.bc-limit{font-family:'DM Mono',monospace;font-size:11px;color:var(--txt3)}
+.bc-slbl{font-size:11px;color:var(--txt3);margin-bottom:3px}
+.bc-spent{font-family:'Inter',sans-serif;font-size:20px;font-weight:700;margin-bottom:10px}
+.bc-track{height:6px;background:var(--bg2);border-radius:10px;overflow:hidden;margin-bottom:8px}
+.bc-fill{height:100%;border-radius:10px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.bc-fill.safe{background:linear-gradient(90deg,var(--income),#34D397)}
+.bc-fill.warn{background:linear-gradient(90deg,#FFB347,#FFCC80)}
+.bc-fill.over{background:linear-gradient(90deg,var(--expense),#FF8A8A)}
+.bc-footer{display:flex;justify-content:space-between;font-size:11px}
+
+/* ── DEBT CARDS ── */
+.dc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.dc-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r2);overflow:hidden;box-shadow:var(--sh-card);transition:var(--tr)}
+.dc-card:hover{transform:translateY(-2px);box-shadow:var(--sh-md)}
+.dc-card.hutang{border-left:4px solid var(--expense)}
+.dc-card.piutang{border-left:4px solid var(--p3)}
+.dc-card.lunas{opacity:.65;border-left:4px solid var(--txt3)}
+.dc-head{padding:14px 16px 10px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.dc-name{font-size:15px;font-weight:700;color:var(--txt1)}
+.dc-phone{font-family:'DM Mono',monospace;font-size:11px;color:var(--txt3);margin-top:2px}
+.dc-pill{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;flex-shrink:0}
+.dc-pill.hutang{background:rgba(255,90,90,.1);color:var(--expense);border:1px solid rgba(255,90,90,.25)}
+.dc-pill.piutang{background:rgba(67,207,172,.1);color:var(--p3);border:1px solid rgba(67,207,172,.25)}
+.dc-pill.lunas{background:rgba(147,150,181,.1);color:var(--txt3);border:1px solid rgba(147,150,181,.25)}
+.dc-body{padding:0 16px 14px}
+.dc-desc{font-size:12px;color:var(--txt2);margin-bottom:10px}
+.dc-amts{display:flex;justify-content:space-between;margin-bottom:8px}
+.dc-albl{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--txt3);font-family:'DM Mono',monospace}
+.dc-aval{font-family:'Inter',sans-serif;font-size:16px;font-weight:700;margin-top:2px}
+.dc-track{height:5px;background:var(--bg2);border-radius:10px;overflow:hidden;margin-bottom:8px}
+.dc-fill{height:100%;border-radius:10px;transition:width .8s ease}
+.dc-fill.hutang{background:linear-gradient(90deg,#FF5A5A,#FF8A8A)}
+.dc-fill.piutang{background:linear-gradient(90deg,#43CFAC,#6EDFC4)}
+.dc-fill.lunas{background:var(--txt3)}
+.dc-foot{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--txt3)}
+.dc-due.overdue{color:var(--expense);font-weight:700}
+.dc-acts{display:flex;gap:6px}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+
+/* ── SETTINGS ── */
+.set-block{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r2);margin-bottom:16px;overflow:hidden;box-shadow:var(--sh-card)}
+.set-title{padding:14px 20px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--txt2);background:var(--bg2)}
+.set-title .fa{color:var(--p1)}
+.set-row{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border);transition:var(--tr)}
+.set-row:last-child{border-bottom:none}
+.set-row:hover{background:var(--bg2)}
+.set-rlbl{font-size:13px;font-weight:700;color:var(--txt1)}
+.set-rdesc{font-size:11px;color:var(--txt3);margin-top:2px}
+.cat-chips{padding:8px 20px 16px;display:flex;flex-wrap:wrap;gap:7px}
+.cat-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;background:var(--bg2);border:1.5px solid var(--border);font-size:11px;font-weight:600;color:var(--txt2)}
+.cat-chip.inc{border-color:rgba(29,185,122,.3);background:rgba(29,185,122,.06);color:var(--income)}
+.cat-chip.exp{border-color:rgba(255,90,90,.3);background:rgba(255,90,90,.06);color:var(--expense)}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(26,29,58,.6);backdrop-filter:blur(6px);z-index:500;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-bg.open{display:flex;animation:fadeBg .2s ease}
+@keyframes fadeBg{from{opacity:0}to{opacity:1}}
+.modal{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r3);width:100%;max-width:500px;box-shadow:var(--sh-lg);animation:slideUp .28s cubic-bezier(.4,0,.2,1);max-height:95vh;overflow-y:auto}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.modal-hdr{padding:22px 24px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1}
+.modal-hdr-t{font-family:'Inter',sans-serif;font-size:17px;font-weight:700;color:var(--txt1)}
+.modal-cls{width:30px;height:30px;border-radius:var(--r1);background:var(--bg2);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--tr);color:var(--txt2);font-size:13px}
+.modal-cls:hover{background:var(--bg);color:var(--txt1)}
+.modal-body{padding:20px 24px}
+.modal-foot{padding:16px 24px;border-top:1.5px solid var(--border);display:flex;gap:8px;position:sticky;bottom:0;background:var(--surface)}
+.modal-foot .btn{flex:1;justify-content:center}
+
+/* ── TYPE TOGGLE ── */
+.type-tog{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;background:var(--bg2);border-radius:var(--r1);margin-bottom:18px}
+.tt-btn{padding:10px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:var(--tr);color:var(--txt3);background:transparent;display:flex;align-items:center;justify-content:center;gap:6px}
+.tt-btn.inc-on{background:#fff;color:var(--income);box-shadow:0 1px 6px rgba(29,185,122,.2)}
+.tt-btn.exp-on{background:#fff;color:var(--expense);box-shadow:0 1px 6px rgba(255,90,90,.2)}
+.tt-btn.ind-on{background:#fff;color:var(--p1);box-shadow:0 1px 6px rgba(108,99,255,.2)}
+
+/* ── FORM ── */
+.fg{margin-bottom:14px}
+.fl{display:block;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--txt3);margin-bottom:6px;font-family:'DM Mono',monospace}
+.fi,.fs,.fta{width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r1);padding:10px 14px;color:var(--txt1);font-size:14px;transition:var(--tr);outline:none}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--p1);background:#fff;box-shadow:0 0 0 3px rgba(108,99,255,.1)}
+.fi::placeholder{color:var(--txt3)}
+.fs option{background:var(--surface)}
+.fta{resize:vertical;min-height:72px}
+.f-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.amt-wrap{position:relative}
+.amt-pfx{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:var(--txt3);pointer-events:none}
+.amt-wrap .fi{padding-left:44px;font-family:'DM Mono',monospace;font-size:16px;font-weight:700}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:48px 20px}
+.empty-ico{font-size:44px;margin-bottom:12px;opacity:.35}
+.empty-tit{font-family:'Inter',sans-serif;font-size:16px;font-weight:700;color:var(--txt2);margin-bottom:6px}
+.empty-desc{font-size:12px;color:var(--txt3)}
+
+/* ── TOAST ── */
+#toasts{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:7px}
+.toast{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--r2);background:var(--surface);border:1.5px solid var(--border);box-shadow:var(--sh-lg);min-width:260px;max-width:340px;animation:toastIn .25s ease;font-size:13px;font-weight:600;color:var(--txt1)}
+@keyframes toastIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast.ok{border-color:rgba(29,185,122,.4);background:rgba(29,185,122,.04)}
+.toast.err{border-color:rgba(255,90,90,.4);background:rgba(255,90,90,.04)}
+.toast.inf{border-color:rgba(108,99,255,.3);background:rgba(108,99,255,.04)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){
+  .sum-grid{grid-template-columns:repeat(2,1fr)}
+  .charts-row,.btm-row,.stats-grid{grid-template-columns:1fr}
+  .debt-mini-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:900px){
+  :root{--sidebar-w:0px}
+  .sidebar{transform:translateX(-256px);width:256px!important}
+  .sidebar.open{transform:translateX(0)}
+  .main-area{margin-left:0}
+  .topbar-ham{display:flex}
+  .search-box input{width:120px}
+}
+@media(max-width:600px){
+  :root{--topbar-h:58px}
+  .page{padding:14px}
+  .sum-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .s-card{padding:14px}
+  .sc-amt{font-size:17px}
+  .topbar{padding:0 14px}
+  .tb-title{font-size:15px}
+  .tb-right .month-pick{display:none}
+  .filter-bar{gap:6px}
+  .search-box{margin-left:0;width:100%}
+  .search-box input{width:100%;flex:1}
+  .f-row{grid-template-columns:1fr}
+  .debt-mini-grid{grid-template-columns:1fr}
+  .tx-table th:nth-child(3),.tx-table td:nth-child(3){display:none}
+  .tx-table th:last-child,.tx-table td:last-child{display:none}
+}
+@media(max-width:400px){
+  .sum-grid{grid-template-columns:1fr}
+  .pin-btn{padding:12px 8px;font-size:16px}
+  .auth-card{padding:28px 20px}
+}
+
+/* ── LANDING PAGE ── */
+#landingPage{
+  position:fixed;inset:0;z-index:9100;
+  background:#F8FAFF;
+  display:flex;flex-direction:column;
+  overflow-y:auto;
+}
+#landingPage.gone{display:none}
+
+/* Nav */
+.lp-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 40px;
+  background:#fff;
+  border-bottom:1px solid #EEF0F8;
+  position:sticky;top:0;z-index:10;
+}
+.lp-nav-brand{display:flex;align-items:center;gap:10px}
+.lp-nav-ico{
+  width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(135deg,#6C63FF,#5B52E8);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;
+}
+.lp-nav-name{font-size:16px;font-weight:800;color:#1A1D3A;letter-spacing:-.3px}
+.lp-nav-cta{
+  padding:9px 20px;border-radius:8px;
+  background:linear-gradient(135deg,#6C63FF,#5B52E8);
+  border:none;font-size:13px;font-weight:700;color:#fff;
+  cursor:pointer;transition:.2s ease;
+  box-shadow:0 3px 12px rgba(108,99,255,.3);
+}
+.lp-nav-cta:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(108,99,255,.4)}
+
+/* Hero */
+.lp-hero{
+  flex:1;
+  max-width:1200px;width:100%;margin:0 auto;
+  padding:64px 40px;
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:60px;align-items:center;
+}
+.lp-hero-left{max-width:520px}
+.lp-pill{
+  display:inline-flex;align-items:center;gap:7px;
+  background:#EEF0FF;border:1px solid #D8DAFF;
+  border-radius:20px;padding:5px 14px;
+  font-size:11px;font-weight:700;color:#6C63FF;
+  letter-spacing:.3px;text-transform:uppercase;
+  margin-bottom:24px;
+}
+.lp-h1{
+  font-size:42px;font-weight:800;
+  color:#1A1D3A;letter-spacing:-1.2px;
+  line-height:1.15;margin-bottom:16px;
+}
+.lp-h1 em{
+  font-style:normal;
+  color:#6C63FF;
+}
+.lp-h2{
+  font-size:18px;font-weight:600;
+  color:#5A5E82;margin-bottom:14px;
+  line-height:1.5;
+}
+.lp-desc{
+  font-size:15px;color:#8085A8;
+  line-height:1.7;margin-bottom:32px;
+}
+.lp-cta-wrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:36px}
+.lp-btn-main{
+  padding:14px 28px;border-radius:10px;
+  background:linear-gradient(135deg,#6C63FF,#5B52E8);
+  border:none;font-size:15px;font-weight:700;color:#fff;
+  cursor:pointer;transition:.2s ease;
+  box-shadow:0 4px 18px rgba(108,99,255,.35);
+  display:inline-flex;align-items:center;gap:8px;
+}
+.lp-btn-main:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(108,99,255,.45)}
+.lp-btn-main:active{transform:scale(.98)}
+.lp-trust{
+  display:flex;align-items:center;gap:7px;
+  font-size:12px;color:#9396B5;
+}
+.lp-trust i{color:#6C63FF;font-size:11px}
+
+/* Target Users */
+.lp-targets{
+  display:flex;flex-wrap:wrap;gap:8px;
+  margin-bottom:0;
+}
+.lp-target{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:20px;
+  background:#fff;border:1.5px solid #EEF0F8;
+  font-size:12px;font-weight:600;color:#5A5E82;
+}
+
+/* Hero Right — Dashboard Mockup */
+.lp-hero-right{position:relative}
+.lp-mockup{
+  background:#fff;border-radius:20px;
+  box-shadow:0 20px 60px rgba(108,99,255,.12),0 4px 16px rgba(26,29,58,.06);
+  overflow:hidden;border:1px solid #EEF0F8;
+}
+.lp-mock-bar{
+  background:linear-gradient(135deg,#6C63FF,#5B52E8);
+  padding:14px 20px;
+  display:flex;align-items:center;gap:8px;
+}
+.lp-mock-bar-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.4)}
+.lp-mock-bar-title{font-size:13px;font-weight:700;color:#fff;margin-left:4px}
+.lp-mock-body{padding:20px}
+.lp-mock-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.lp-mock-card{
+  border-radius:12px;padding:14px;
+}
+.lp-mock-card.blue{background:linear-gradient(135deg,#6C63FF,#8B83FF);color:#fff}
+.lp-mock-card.green{background:linear-gradient(135deg,#1DB97A,#34D397);color:#fff}
+.lp-mock-card.red{background:linear-gradient(135deg,#FF5A5A,#FF8A8A);color:#fff}
+.lp-mock-card.amber{background:linear-gradient(135deg,#FFB347,#FFCC80);color:#fff}
+.lp-mock-lbl{font-size:9px;font-weight:700;opacity:.8;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
+.lp-mock-val{font-size:18px;font-weight:800;letter-spacing:-.5px}
+.lp-mock-meta{font-size:10px;opacity:.75;margin-top:3px}
+.lp-mock-title{font-size:11px;font-weight:700;color:#1A1D3A;margin-bottom:10px}
+.lp-mock-tx{display:flex;flex-direction:column;gap:7px}
+.lp-mock-row{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;border-radius:8px;background:#F8FAFF;
+}
+.lp-mock-ico{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.lp-mock-ico.inc{background:rgba(29,185,122,.12)}
+.lp-mock-ico.exp{background:rgba(255,90,90,.1)}
+.lp-mock-row-desc{flex:1;font-size:11px;font-weight:600;color:#1A1D3A}
+.lp-mock-row-cat{font-size:9px;color:#9396B5;margin-top:1px}
+.lp-mock-row-amt{font-size:12px;font-weight:700;white-space:nowrap}
+.lp-mock-row-amt.inc{color:#1DB97A}
+.lp-mock-row-amt.exp{color:#FF5A5A}
+
+/* Benefits section */
+.lp-benefits{
+  background:#fff;border-top:1px solid #EEF0F8;
+  padding:60px 40px;
+}
+.lp-benefits-inner{max-width:1200px;margin:0 auto}
+.lp-sec-label{
+  font-size:11px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:#6C63FF;
+  margin-bottom:12px;
+}
+.lp-sec-title{
+  font-size:28px;font-weight:800;color:#1A1D3A;
+  letter-spacing:-.5px;margin-bottom:8px;
+}
+.lp-sec-desc{font-size:15px;color:#8085A8;margin-bottom:40px;line-height:1.6}
+.lp-ben-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:20px;
+}
+.lp-ben{
+  padding:24px;border-radius:16px;
+  background:#F8FAFF;border:1.5px solid #EEF0F8;
+  transition:.2s ease;
+}
+.lp-ben:hover{background:#fff;box-shadow:0 8px 30px rgba(108,99,255,.08);transform:translateY(-3px)}
+.lp-ben-ico{
+  width:44px;height:44px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;margin-bottom:14px;
+}
+.lp-ben-ico.b1{background:#EEF0FF}
+.lp-ben-ico.b2{background:#E6FBF3}
+.lp-ben-ico.b3{background:#FFF3E6}
+.lp-ben-ico.b4{background:#FFEEF0}
+.lp-ben-ico.b5{background:#EFF9FF}
+.lp-ben-ico.b6{background:#F3F0FF}
+.lp-ben-title{font-size:15px;font-weight:700;color:#1A1D3A;margin-bottom:6px}
+.lp-ben-desc{font-size:13px;color:#8085A8;line-height:1.6}
+
+/* Footer */
+.lp-footer{
+  background:#1A1D3A;padding:28px 40px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+}
+.lp-footer-brand{display:flex;align-items:center;gap:8px}
+.lp-footer-brand-name{font-size:14px;font-weight:700;color:#fff}
+.lp-footer-brand-ver{font-size:10px;color:rgba(255,255,255,.4);font-family:monospace}
+.lp-footer-note{font-size:12px;color:rgba(255,255,255,.4)}
+
+/* Responsive LP */
+@media(max-width:900px){
+  .lp-hero{grid-template-columns:1fr;gap:40px;padding:40px 24px}
+  .lp-hero-left{max-width:100%}
+  .lp-h1{font-size:32px}
+  .lp-nav{padding:14px 24px}
+  .lp-ben-grid{grid-template-columns:1fr 1fr}
+  .lp-benefits{padding:40px 24px}
+  .lp-footer{padding:20px 24px}
+}
+@media(max-width:600px){
+  .lp-h1{font-size:26px}
+  .lp-h2{font-size:15px}
+  .lp-mock-cards{grid-template-columns:1fr 1fr}
+  .lp-ben-grid{grid-template-columns:1fr}
+  .lp-hero-right{display:none}
+  .lp-nav-cta{padding:8px 14px;font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<!-- LANDING PAGE -->
+<div id="landingPage">
+
+  <!-- Nav -->
+  <nav class="lp-nav">
+    <div class="lp-nav-brand">
+      <div class="lp-nav-ico">💡</div>
+      <div class="lp-nav-name">SmartPlan</div>
+    </div>
+    <button class="lp-nav-cta" onclick="showPinScreen()">Coba Sekarang</button>
+  </nav>
+
+  <!-- Hero -->
+  <section class="lp-hero">
+    <div class="lp-hero-left">
+      <div class="lp-pill">
+        <i class="fas fa-chart-line" style="font-size:10px"></i>
+        Personal Financial Management
+      </div>
+      <h1 class="lp-h1">
+        Uang sering habis<br>
+        tanpa tahu ke mana<br>
+        <em>perginya?</em>
+      </h1>
+      <p class="lp-h2">Catat, pantau, dan pahami kondisi keuangan Anda.</p>
+      <p class="lp-desc">
+        SmartPlan membantu Anda mengelola transaksi, hutang, piutang,
+        dan anggaran dalam satu tempat yang sederhana dan mudah digunakan.
+        Data Anda tersimpan di Google Spreadsheet milik Anda sendiri —
+        privat, aman, dan sepenuhnya dalam kendali Anda.
+      </p>
+      <div class="lp-cta-wrap">
+        <button class="lp-btn-main" onclick="showPinScreen()">
+          <i class="fas fa-arrow-right"></i> Coba Sekarang
+        </button>
+        <div class="lp-trust">
+          <i class="fas fa-shield-halved"></i>
+          Data Anda, kendali Anda
+        </div>
+      </div>
+      <div class="lp-targets">
+        <div class="lp-target">👨‍💼 Karyawan</div>
+        <div class="lp-target">🏪 UMKM</div>
+        <div class="lp-target">💻 Freelancer</div>
+        <div class="lp-target">🎓 Mahasiswa</div>
+        <div class="lp-target">🏠 Ibu Rumah Tangga</div>
+        <div class="lp-target">👨‍👩‍👧 Keluarga Muda</div>
+      </div>
+    </div>
+    <div class="lp-hero-right">
+      <!-- Dashboard Mockup -->
+      <div class="lp-mockup">
+        <div class="lp-mock-bar">
+          <div class="lp-mock-bar-dot"></div>
+          <div class="lp-mock-bar-dot"></div>
+          <div class="lp-mock-bar-dot"></div>
+          <div class="lp-mock-bar-title">SmartPlan Dashboard</div>
+        </div>
+        <div class="lp-mock-body">
+          <div class="lp-mock-cards">
+            <div class="lp-mock-card blue">
+              <div class="lp-mock-lbl">Saldo Kas</div>
+              <div class="lp-mock-val">Rp 3,2jt</div>
+              <div class="lp-mock-meta">✓ Keuangan positif</div>
+            </div>
+            <div class="lp-mock-card green">
+              <div class="lp-mock-lbl">Pemasukan</div>
+              <div class="lp-mock-val">Rp 8,5jt</div>
+              <div class="lp-mock-meta">12 transaksi</div>
+            </div>
+            <div class="lp-mock-card red">
+              <div class="lp-mock-lbl">Pengeluaran</div>
+              <div class="lp-mock-val">Rp 5,3jt</div>
+              <div class="lp-mock-meta">24 transaksi</div>
+            </div>
+            <div class="lp-mock-card amber">
+              <div class="lp-mock-lbl">Tabungan</div>
+              <div class="lp-mock-val">37,6%</div>
+              <div class="lp-mock-meta">dari pemasukan</div>
+            </div>
+          </div>
+          <div class="lp-mock-title">Transaksi Terkini</div>
+          <div class="lp-mock-tx">
+            <div class="lp-mock-row">
+              <div class="lp-mock-ico inc">💼</div>
+              <div>
+                <div class="lp-mock-row-desc">Gaji Bulan Ini</div>
+                <div class="lp-mock-row-cat">Pemasukan · Kas</div>
+              </div>
+              <div class="lp-mock-row-amt inc">+Rp 7.000.000</div>
+            </div>
+            <div class="lp-mock-row">
+              <div class="lp-mock-ico exp">🍔</div>
+              <div>
+                <div class="lp-mock-row-desc">Makan Siang</div>
+                <div class="lp-mock-row-cat">Makanan · Kas</div>
+              </div>
+              <div class="lp-mock-row-amt exp">-Rp 45.000</div>
+            </div>
+            <div class="lp-mock-row">
+              <div class="lp-mock-ico exp">🤝</div>
+              <div>
+                <div class="lp-mock-row-desc">Pinjam ke Budi</div>
+                <div class="lp-mock-row-cat">Piutang · Jatuh tempo 30 Jul</div>
+              </div>
+              <div class="lp-mock-row-amt exp">-Rp 500.000</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Benefits -->
+  <section class="lp-benefits">
+    <div class="lp-benefits-inner">
+      <div class="lp-sec-label">Mengapa SmartPlan?</div>
+      <div class="lp-sec-title">Kendalikan keuangan Anda,<br>mulai hari ini</div>
+      <div class="lp-sec-desc">Bukan sekadar catat-mencatat. SmartPlan membantu Anda memahami ke mana uang Anda pergi.</div>
+      <div class="lp-ben-grid">
+        <div class="lp-ben">
+          <div class="lp-ben-ico b1">💸</div>
+          <div class="lp-ben-title">Catat Setiap Transaksi</div>
+          <div class="lp-ben-desc">Pemasukan dan pengeluaran harian tercatat rapi. Tidak ada lagi pengeluaran yang terlupakan.</div>
+        </div>
+        <div class="lp-ben">
+          <div class="lp-ben-ico b2">🤝</div>
+          <div class="lp-ben-title">Pantau Hutang & Piutang</div>
+          <div class="lp-ben-desc">Catat siapa yang berhutang dan kepada siapa Anda berhutang. Bayar sebagian pun bisa dicatat.</div>
+        </div>
+        <div class="lp-ben">
+          <div class="lp-ben-ico b3">🎯</div>
+          <div class="lp-ben-title">Anggaran Bulanan</div>
+          <div class="lp-ben-desc">Tetapkan batas pengeluaran per kategori dan hindari pemborosan yang tidak disadari.</div>
+        </div>
+        <div class="lp-ben">
+          <div class="lp-ben-ico b4">📊</div>
+          <div class="lp-ben-title">Laporan Visual</div>
+          <div class="lp-ben-desc">Grafik dan statistik yang mudah dibaca membantu Anda memahami kondisi keuangan secara menyeluruh.</div>
+        </div>
+        <div class="lp-ben">
+          <div class="lp-ben-ico b5">🔒</div>
+          <div class="lp-ben-title">Data Milik Anda Sendiri</div>
+          <div class="lp-ben-desc">Data tersimpan di Google Spreadsheet pribadi Anda. Tidak ada server pihak ketiga yang menyimpan data keuangan Anda.</div>
+        </div>
+        <div class="lp-ben">
+          <div class="lp-ben-ico b6">⚡</div>
+          <div class="lp-ben-title">Cepat & Mudah</div>
+          <div class="lp-ben-desc">Antarmuka yang sederhana dan responsif. Catat transaksi dalam hitungan detik dari perangkat apapun.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="lp-footer">
+    <div class="lp-footer-brand">
+      <div class="lp-nav-ico" style="width:28px;height:28px;font-size:13px;border-radius:7px">💡</div>
+      <div>
+        <div class="lp-footer-brand-name">SmartPlan</div>
+        <div class="lp-footer-brand-ver">Personal Financial Management System</div>
+      </div>
+    </div>
+    <div class="lp-footer-note">
+      <i class="fas fa-lock" style="font-size:10px;margin-right:5px"></i>
+      Data Anda tersimpan aman di Google Spreadsheet pribadi Anda
+    </div>
+  </footer>
+
+</div>
+
+<!-- AUTH -->
+<div id="authScreen">
+  <div class="auth-card">
+    <!-- Brand -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px">
+      <div class="auth-logo">💡</div>
+    </div>
+    <div class="auth-title" id="authTitle">SmartPlan</div>
+    <div class="auth-sub" id="authSub">Masukkan PIN Anda untuk melanjutkan</div>
+    <!-- PIN Dots -->
+    <div class="pin-dots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="auth-msg" id="authMsg"></div>
+    <!-- PIN Pad -->
+    <div class="pin-pad">
+      <button class="pin-btn" onclick="pinPress('1')">1<span class="ps"></span></button>
+      <button class="pin-btn" onclick="pinPress('2')">2<span class="ps">ABC</span></button>
+      <button class="pin-btn" onclick="pinPress('3')">3<span class="ps">DEF</span></button>
+      <button class="pin-btn" onclick="pinPress('4')">4<span class="ps">GHI</span></button>
+      <button class="pin-btn" onclick="pinPress('5')">5<span class="ps">JKL</span></button>
+      <button class="pin-btn" onclick="pinPress('6')">6<span class="ps">MNO</span></button>
+      <button class="pin-btn" onclick="pinPress('7')">7<span class="ps">PQRS</span></button>
+      <button class="pin-btn" onclick="pinPress('8')">8<span class="ps">TUV</span></button>
+      <button class="pin-btn" onclick="pinPress('9')">9<span class="ps">WXYZ</span></button>
+      <button class="pin-btn zero" onclick="pinPress('0')">0</button>
+      <button class="pin-btn del" onclick="pinDel()"><i class="fas fa-delete-left"></i></button>
+    </div>
+    <!-- Hidden elements tetap ada untuk JS compatibility - tidak tampil -->
+    <div id="authHint" style="display:none"></div>
+    <div id="authLink" style="display:none" onclick="togglePinMode()"></div>
+    <!-- Footer note -->
+    <div style="margin-top:20px;font-size:11px;color:#9396B5;display:flex;align-items:center;justify-content:center;gap:5px">
+      <i class="fas fa-shield-halved" style="color:#6C63FF;font-size:10px"></i>
+      Dilindungi PIN Pribadi
+    </div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loadingScreen">
+  <div class="load-logo">💡 SmartPlan</div>
+  <div class="load-spin"></div>
+</div>
+
+<!-- APP -->
+<div id="appShell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-brand-ico">💡</div>
+      <div><div class="sb-brand-name">SmartPlan</div><div class="sb-brand-ver">PERSONAL FINANCE</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="sb-ava" id="sbAva">U</div>
+      <div><div class="sb-uname" id="sbName">Pengguna</div><div class="sb-utag">Personal Account</div></div>
+    </div>
+    <div class="sb-month"><span class="sb-mlabel">Periode</span><span class="sb-mval" id="sbMonth">—</span></div>
+    <div class="nav-sec">Menu Utama</div>
+    <nav class="nav-menu">
+      <div class="nav-item active" data-page="dashboard"><span class="ni"><i class="fas fa-chart-pie"></i></span><span>Dashboard</span></div>
+      <div class="nav-item" data-page="transactions"><span class="ni"><i class="fas fa-exchange-alt"></i></span><span>Transaksi</span><span class="badge" id="txBadge">0</span></div>
+      <div class="nav-item" data-page="budget"><span class="ni"><i class="fas fa-wallet"></i></span><span>Budget</span></div>
+      <div class="nav-item" data-page="debt"><span class="ni"><i class="fas fa-handshake"></i></span><span>Hutang &amp; Piutang</span><span class="badge red" id="debtBadge">0</span></div>
+      <div class="nav-item" data-page="statistics"><span class="ni"><i class="fas fa-chart-line"></i></span><span>Statistik</span></div>
+    </nav>
+    <div class="nav-sec">Lainnya</div>
+    <nav class="nav-menu">
+        <div class="nav-item" data-page="settings" style="pointer-events:none;opacity:0.5;">
+            <span class="ni"><i class="fas fa-cog"></i></span>
+            <span>Pengaturan</span>
+        </div>
+    </nav>
+    <div class="sb-footer">
+      <button class="btn-logout" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Keluar / Kunci</button>
+    </div>
+  </aside>
+  <div class="sidebar-overlay" id="sideOverlay" onclick="closeSidebar()"></div>
+
+  <div class="main-area">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <button class="topbar-ham" id="hamburger" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+      <div class="tb-titles"><div class="tb-title" id="pgTitle">Dashboard</div><div class="tb-sub" id="pgSub">Ringkasan keuangan Anda</div></div>
+      <div class="tb-right">
+        <div class="month-pick"><i class="fas fa-calendar-alt"></i><select id="monthSel" onchange="onMonthChange()"></select></div>
+        <button class="btn btn-primary" onclick="openAddTx()"><i class="fas fa-plus"></i> <span>Transaksi</span></button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="pg-dashboard">
+      <div class="sum-grid">
+        <div class="s-card sc-bal"><div class="sc-ico"><i class="fas fa-coins"></i></div><div class="sc-lbl">Saldo Kas</div><div class="sc-amt" id="scBal">Rp 0</div><div class="sc-meta" id="scBalMeta">Bulan ini</div></div>
+        <div class="s-card sc-inc"><div class="sc-ico"><i class="fas fa-arrow-trend-up"></i></div><div class="sc-lbl">Pemasukan</div><div class="sc-amt" id="scInc">Rp 0</div><div class="sc-meta" id="scIncMeta">0 transaksi</div></div>
+        <div class="s-card sc-exp"><div class="sc-ico"><i class="fas fa-arrow-trend-down"></i></div><div class="sc-lbl">Pengeluaran</div><div class="sc-amt" id="scExp">Rp 0</div><div class="sc-meta" id="scExpMeta">0 transaksi</div></div>
+        <div class="s-card sc-sav"><div class="sc-ico"><i class="fas fa-piggy-bank"></i></div><div class="sc-lbl">Tingkat Tabungan</div><div class="sc-amt" id="scSav">0%</div><div class="sc-meta" id="scSavMeta">dari pemasukan</div></div>
+      </div>
+      <div class="debt-mini-grid">
+        <div class="debt-mini hutang-card">
+          <div class="dm-ico h">😰</div>
+          <div style="flex:1;min-width:0"><div class="dm-lbl">Total Hutang Aktif</div><div class="dm-amt h" id="dashHutang">Rp 0</div></div>
+          <button class="btn btn-outline btn-sm" onclick="nav('debt')">Lihat</button>
+        </div>
+        <div class="debt-mini piutang-card">
+          <div class="dm-ico p">🤝</div>
+          <div style="flex:1;min-width:0"><div class="dm-lbl">Total Piutang Aktif</div><div class="dm-amt p" id="dashPiutang">Rp 0</div></div>
+          <button class="btn btn-outline btn-sm" onclick="nav('debt')">Lihat</button>
+        </div>
+      </div>
+      <div class="charts-row">
+        <div class="card">
+          <div class="card-hdr">
+            <div><div class="card-hdr-t">Tren 6 Bulan</div><div class="card-hdr-s">Pemasukan vs pengeluaran</div></div>
+            <div style="display:flex;gap:10px;font-size:11px">
+              <span style="display:flex;align-items:center;gap:4px;color:var(--income)"><span style="width:8px;height:8px;border-radius:50%;background:var(--income);display:inline-block"></span>Masuk</span>
+              <span style="display:flex;align-items:center;gap:4px;color:var(--expense)"><span style="width:8px;height:8px;border-radius:50%;background:var(--expense);display:inline-block"></span>Keluar</span>
+            </div>
+          </div>
+          <div class="card-body"><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div><div class="card-hdr-t">Kategori Pengeluaran</div><div class="card-hdr-s">Bulan ini</div></div></div>
+          <div class="donut-sec" id="donutSec">
+            <svg id="donutSvg" width="130" height="130" viewBox="0 0 130 130" style="flex-shrink:0"></svg>
+            <div class="donut-leg" id="donutLeg"></div>
+          </div>
+        </div>
+      </div>
+      <div class="btm-row">
+        <div class="card">
+          <div class="card-hdr"><div><div class="card-hdr-t">Transaksi Terkini</div><div class="card-hdr-s">10 terakhir</div></div><button class="btn btn-outline btn-sm" onclick="nav('transactions')">Lihat Semua <i class="fas fa-arrow-right"></i></button></div>
+          <div style="overflow-x:auto"><table class="tx-table"><thead><tr><th>Deskripsi</th><th>Kategori</th><th>Tanggal</th><th>Jumlah</th></tr></thead><tbody id="recentTxBody"></tbody></table></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div><div class="card-hdr-t">Top Pengeluaran</div><div class="card-hdr-s">Per kategori</div></div></div>
+          <div class="card-body"><div class="cat-bars" id="catBars"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS -->
+    <div class="page" id="pg-transactions">
+      <div class="filter-bar">
+        <div class="chip active" onclick="setTxFilter('all',this)">Semua</div>
+        <div class="chip inc" onclick="setTxFilter('income',this)">💚 Pemasukan</div>
+        <div class="chip exp" onclick="setTxFilter('expense',this)">❤️ Pengeluaran</div>
+        <div class="search-box"><i class="fas fa-search"></i><input type="text" id="txSearch" placeholder="Cari..." oninput="renderTxList()"></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div><div class="card-hdr-t">Semua Transaksi <span id="txCount" style="font-size:12px;color:var(--txt3);font-weight:400"></span></div></div><button class="btn btn-outline btn-sm" onclick="exportCSV()"><i class="fas fa-download"></i> Export</button></div>
+        <div style="overflow-x:auto"><table class="tx-table"><thead><tr><th>Deskripsi</th><th>Kategori</th><th>Tanggal</th><th>Jumlah</th><th></th></tr></thead><tbody id="allTxBody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- BUDGET -->
+    <div class="page" id="pg-budget">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+        <div><div class="card-hdr-t">Budget Bulanan</div><div style="font-size:12px;color:var(--txt3);margin-top:2px">Kelola anggaran per kategori</div></div>
+        <button class="btn btn-primary" onclick="openBudgetModal()"><i class="fas fa-plus"></i> Set Budget</button>
+      </div>
+      <div class="budget-grid" id="budgetGrid"></div>
+    </div>
+
+    <!-- HUTANG & PIUTANG -->
+    <div class="page" id="pg-debt">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div class="filter-bar" style="margin-bottom:0;flex-wrap:wrap">
+          <div class="chip active" id="dcAll" onclick="setDebtFilter('all',this)">Semua Aktif</div>
+          <div class="chip h" id="dcH" onclick="setDebtFilter('hutang',this)">😰 Hutang</div>
+          <div class="chip p" id="dcP" onclick="setDebtFilter('piutang',this)">🤝 Piutang</div>
+          <div class="chip done" id="dcD" onclick="setDebtFilter('lunas',this)">✅ Lunas</div>
+        </div>
+        <div id="debtSumLbl" style="font-size:12px;color:var(--txt3)"></div>
+      </div>
+      <div class="dc-grid" id="debtGrid"></div>
+    </div>
+
+    <!-- STATISTICS -->
+    <div class="page" id="pg-statistics">
+      <div class="stats-grid">
+        <div class="card"><div class="card-hdr"><div class="card-hdr-t">Pemasukan vs Pengeluaran</div></div><div class="card-body"><div class="chart-wrap"><canvas id="compareChart"></canvas></div></div></div>
+        <div class="card"><div class="card-hdr"><div class="card-hdr-t">Distribusi Kategori</div></div><div class="card-body"><div class="chart-wrap"><canvas id="catChart"></canvas></div></div></div>
+      </div>
+      <div class="card"><div class="card-hdr"><div class="card-hdr-t">Pengeluaran Harian</div><div class="card-hdr-s">Bulan ini</div></div><div class="card-body"><div class="chart-wrap-sm"><canvas id="dailyChart"></canvas></div></div></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="pg-settings">
+      <div class="set-block">
+        <div class="set-title"><i class="fas fa-user"></i> Profil Pengguna</div>
+        <div class="set-row"><div><div class="set-rlbl">Nama</div><div class="set-rdesc">Ditampilkan di sidebar</div></div><div style="display:flex;gap:7px"><input class="fi" id="setName" style="width:160px;padding:8px 12px" placeholder="Nama Anda"><button class="btn btn-outline btn-sm" onclick="saveName()">Simpan</button></div></div>
+        <div class="set-row"><div><div class="set-rlbl">Mata Uang</div><div class="set-rdesc">Format tampilan angka</div></div><select class="fs" id="setCurr" style="width:110px" onchange="saveCurr()"><option value="IDR">IDR (Rp)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option><option value="SGD">SGD (S$)</option></select></div>
+        <div class="set-row"><div><div class="set-rlbl">Ganti PIN</div><div class="set-rdesc">Ubah PIN 4 digit login</div></div><button class="btn btn-outline btn-sm" onclick="openChangePIN()"><i class="fas fa-key"></i> Ganti PIN</button></div>
+      </div>
+      <div class="set-block">
+        <div class="set-title"><i class="fas fa-tags"></i> Kategori</div>
+        <div class="set-row"><div><div class="set-rlbl">Tambah Kategori</div><div class="set-rdesc">Buat kategori custom</div></div><button class="btn btn-outline btn-sm" onclick="openCatModal()"><i class="fas fa-plus"></i> Tambah</button></div>
+        <div class="cat-chips" id="catChipList"></div>
+      </div>
+      <div class="set-block">
+        <div class="set-title"><i class="fas fa-database"></i> Data</div>
+        <div class="set-row"><div><div class="set-rlbl">Sumber Data</div><div class="set-rdesc">Google Sheets (auto-configured)</div></div><span style="font-family:monospace;font-size:10px;color:var(--p1);background:rgba(108,99,255,.1);padding:3px 9px;border-radius:20px">Connected</span></div>
+        <div class="set-row"><div><div class="set-rlbl">Refresh Data</div><div class="set-rdesc">Muat ulang dari spreadsheet</div></div><button class="btn btn-outline btn-sm" onclick="refreshAll()"><i class="fas fa-sync-alt"></i> Refresh</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+
+<!-- TX Modal -->
+<div class="modal-bg" id="txModal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-hdr-t" id="txModalTitle">Tambah Transaksi</div><button class="modal-cls" onclick="closeModal('txModal')"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body">
+      <input type="hidden" id="txId">
+      <input type="hidden" id="txType" value="expense">
+      <input type="hidden" id="txSubType" value="kas">
+      <div class="type-tog">
+        <button class="tt-btn" id="incBtn" onclick="setTxType('income')"><i class="fas fa-arrow-trend-up"></i> Pemasukan</button>
+        <button class="tt-btn exp-on" id="expBtn" onclick="setTxType('expense')"><i class="fas fa-arrow-trend-down"></i> Pengeluaran</button>
+      </div>
+      <!-- SubType -->
+      <div class="fg">
+        <label class="fl" id="subTypeLbl">Jenis</label>
+        <div class="type-tog" style="margin-bottom:0">
+          <button class="tt-btn exp-on" id="subKasBtn" onclick="setSubType('kas')"><i class="fas fa-money-bill-wave"></i> Kas</button>
+          <button class="tt-btn" id="subDcBtn" onclick="setSubType('dc')"><i class="fas fa-handshake"></i> <span id="subDcLbl">Piutang</span></button>
+        </div>
+      </div>
+      <!-- Contact fields — tampil hanya saat subType bukan kas -->
+      <div id="contactFields" style="display:none">
+        <div class="f-row">
+          <div class="fg"><label class="fl" id="contactNameLbl">Nama</label><input type="text" class="fi" id="txContactName" placeholder="Nama lengkap"></div>
+          <div class="fg"><label class="fl">No. HP / WA</label><input type="tel" class="fi" id="txContactPhone" placeholder="08xxxxxxxxxx"></div>
+        </div>
+        <div class="fg"><label class="fl">Jatuh Tempo (opsional)</label><input type="date" class="fi" id="txDueDate"></div>
+      </div>
+      <!-- Amount -->
+
+      <div class="fg">
+        <label class="fl">Jumlah</label>
+          <div class="amt-wrap">
+              <span class="amt-pfx" id="txCurrPfx">Rp</span>
+              <input type="text" class="fi" id="txAmt" placeholder="0">
+          </div>
+      </div>
+
+      <div class="f-row">
+        <div class="fg"><label class="fl">Kategori</label><select class="fs" id="txCat"></select></div>
+        <div class="fg"><label class="fl">Tanggal</label><input type="date" class="fi" id="txDate"></div>
+      </div>
+      <div class="fg"><label class="fl">Deskripsi</label><input type="text" class="fi" id="txDesc" placeholder="Keterangan transaksi"></div>
+      <div class="fg"><label class="fl">Catatan (opsional)</label><textarea class="fta" id="txNote" placeholder="Catatan tambahan..."></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('txModal')">Batal</button>
+      <button class="btn btn-primary" onclick="saveTx()" id="saveTxBtn"><i class="fas fa-save"></i> Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Budget Modal -->
+<div class="modal-bg" id="budgetModal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-hdr-t">Set Budget Bulanan</div><button class="modal-cls" onclick="closeModal('budgetModal')"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body">
+      <div class="fg"><label class="fl">Kategori Pengeluaran</label><select class="fs" id="bdgCat"></select></div>
+      <div class="fg">
+        <label class="fl">Batas Budget</label>
+        <div class="amt-wrap">
+          <span class="amt-pfx" id="bdgPfx">Rp</span>
+          <input type="text" class="fi" id="bdgAmt" placeholder="0" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('budgetModal')">Batal</button>
+      <button class="btn btn-primary" onclick="saveBudget()"><i class="fas fa-save"></i> Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Category Modal -->
+<div class="modal-bg" id="catModal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-hdr-t">Tambah Kategori</div><button class="modal-cls" onclick="closeModal('catModal')"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body">
+      <input type="hidden" id="catType" value="income">
+      <div class="fg">
+        <label class="fl">Tipe</label>
+        <div class="type-tog" style="margin-bottom:0">
+          <button class="tt-btn inc-on" id="catIncBtn" onclick="setCatType('income')">Pemasukan</button>
+          <button class="tt-btn" id="catExpBtn" onclick="setCatType('expense')">Pengeluaran</button>
+        </div>
+      </div>
+      <div class="f-row">
+        <div class="fg"><label class="fl">Nama</label><input type="text" class="fi" id="catName" placeholder="cth: Belanja Online"></div>
+        <div class="fg"><label class="fl">Emoji</label><input type="text" class="fi" id="catIcon" placeholder="🛍️" maxlength="4"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('catModal')">Batal</button>
+      <button class="btn btn-primary" onclick="saveCat()"><i class="fas fa-plus"></i> Tambah</button>
+    </div>
+  </div>
+</div>
+
+<!-- Change PIN Modal -->
+<div class="modal-bg" id="pinModal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-hdr-t">Ganti PIN</div><button class="modal-cls" onclick="closeModal('pinModal')"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body">
+      <div class="fg"><label class="fl">PIN Lama</label><input type="password" class="fi" id="pinOld" placeholder="••••" maxlength="4" inputmode="numeric"></div>
+      <div class="fg"><label class="fl">PIN Baru</label><input type="password" class="fi" id="pinNew" placeholder="••••" maxlength="4" inputmode="numeric"></div>
+      <div class="fg"><label class="fl">Konfirmasi PIN Baru</label><input type="password" class="fi" id="pinConf" placeholder="••••" maxlength="4" inputmode="numeric"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('pinModal')">Batal</button>
+      <button class="btn btn-primary" onclick="changePIN()"><i class="fas fa-key"></i> Ganti PIN</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pay Modal -->
+<div class="modal-bg" id="payModal">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-hdr-t" id="payTitle">Bayar / Terima Cicilan</div><button class="modal-cls" onclick="closeModal('payModal')"><i class="fas fa-times"></i></button></div>
+    <div class="modal-body">
+      <input type="hidden" id="payId">
+      <div id="payInfo" style="background:var(--bg2);border-radius:var(--r1);padding:12px 14px;margin-bottom:16px"></div>
+      <div class="fg">
+          <label class="fl">Jumlah Dibayar / Diterima</label>
+          <div class="amt-wrap">
+              <span class="amt-pfx" id="payPfx">Rp</span>
+              <input type="text" class="fi" id="payAmt" placeholder="0" inputmode="numeric">
+          </div>
+      </div>
+      <div class="fg"><label class="fl">Tanggal</label><input type="date" class="fi" id="payDate"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('payModal')">Batal</button>
+      <button class="btn btn-primary" id="payBtn" onclick="submitPay()"><i class="fas fa-check"></i> Konfirmasi</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<!-- Edit Debt Modal -->
+<div class="modal-bg" id="editDebtModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-hdr-t" id="editDebtTitle">Edit Hutang / Piutang</div>
+      <button class="modal-cls" onclick="closeModal('editDebtModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edId">
+      <input type="hidden" id="edType">
+      <div class="f-row">
+        <div class="fg"><label class="fl" id="edNameLbl">Nama</label><input type="text" class="fi" id="edName" placeholder="Nama lengkap"></div>
+        <div class="fg"><label class="fl">No. HP / WA</label><input type="tel" class="fi" id="edPhone" placeholder="08xxxxxxxxxx"></div>
+      </div>
+      <div class="fg"><label class="fl">Total Nominal</label><div class="amt-wrap"><span class="amt-pfx" id="edPfx">Rp</span><input type="number" class="fi" id="edTotal" placeholder="0" min="0"></div></div>
+      <div class="fg"><label class="fl">Sudah Dibayar / Diterima</label><div class="amt-wrap"><span class="amt-pfx" id="edPfx2">Rp</span><input type="number" class="fi" id="edPaid" placeholder="0" min="0"></div></div>
+      <div class="fg"><label class="fl">Jatuh Tempo</label><input type="date" class="fi" id="edDue"></div>
+      <div class="fg"><label class="fl">Keterangan</label><input type="text" class="fi" id="edDesc" placeholder="Keterangan..."></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('editDebtModal')">Batal</button>
+      <button class="btn btn-primary" id="editDebtBtn" onclick="saveEditDebt()"><i class="fas fa-save"></i> Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   REST API BRIDGE (PENGGANTI google.script.run)
+═══════════════════════════════════════════════════ */
+// GANTI DENGAN URL WEB APP MILIK ANDA YANG ADA DI LANGKAH DEPLOY GOOGLE SCRIPT
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw-PpY3fjs4rWt041equkCYJa2rrdLK3GmUGUl07_f63SQc0hML2xD7P1rKPwMFnL_Y1g/exec";
+
+/**
+ * Pengganti google.script.run yang melempar request POST asinkron secara aman.
+ * Menggunakan mode text/plain untuk memblokir pemicu CORS preflight error di browser.
+ */
+async function gas(functionName, ...args) {
+  // Validasi URL Web App
+  if (WEB_APP_URL === "URL_WEB_APP_APPS_SCRIPT_ANDA_DI_SINI" || !WEB_APP_URL.startsWith("https://")) {
+    toast("Error: URL Apps Script belum dikonfigurasi di file index.html!", "err");
+    document.getElementById('loadingScreen').classList.add('gone');
+    return { success: false, error: "Konfigurasi URL belum diisi" };
+  }
+
+  const payload = args.length === 1 ? args[0] : (args.length > 1 ? args : null);
+  try {
+    const response = await fetch(WEB_APP_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify({
+        action: functionName,
+        payload: payload,
+        token: localStorage.getItem(TOKEN_KEY) || null
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP Error! Status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    // C1: Auto-logout bila token expired/invalid (code 401)
+    if (result.code === 401) {
+      forceRelogin();
+      return { success: false, error: result.error };
+    }
+    return result;
+  } catch (error) {
+    console.error(`Gagal menghubungi Apps Script [${functionName}]:`, error);
+    return { success: false, error: error.message };
+  }
+}
+
+// C1: Paksa user re-login ketika token expired/invalid
+function forceRelogin() {
+  localStorage.removeItem(TOKEN_KEY);
+  sesClear();
+  S.pinBuf = ''; S.pinMode = 'verify';
+  S.pinNewBuf = ''; S.pinOldBuf = ''; S.pinStage = 'new';
+  updateDots();
+  document.getElementById('authTitle').textContent = 'SmartPlan';
+  document.getElementById('authSub').textContent = 'Sesi expired. Masukkan PIN untuk melanjutkan';
+  document.getElementById('authMsg').textContent = '';
+  document.getElementById('loadingScreen').classList.add('gone');
+  document.getElementById('appShell').classList.remove('visible');
+  showPinScreen();
+  toast('Sesi expired, silakan login ulang', 'err');
+}
+
+/* ═══════════════════════════════════════════════════
+   STATE & CONSTANTS
+═══════════════════════════════════════════════════ */
+const PIN_KEY     = 'kku_pin';
+const PIN_SALT    = 'kku_pin_salt';
+const PIN_HASHED_KEY = 'kku_pin_hashed';
+const TOKEN_KEY   = 'kku_token';
+const SES_KEY     = 'kku_ses';
+// A2: DEFAULT_PIN dihapus. PIN default '5678' tidak lagi berlaku.
+// User wajib setup PIN pertama kali. User existing yang masih pakai '5678'
+// akan diminta setup ulang saat login berikutnya (force setup).
+const COLORS      = ['#6C63FF','#FF6584','#43CFAC','#FFB347','#54A0FF','#FF6B6B','#A29BFE','#26de81'];
+const PAGE_META   = {
+  dashboard:    ['Dashboard','Ringkasan keuangan Anda'],
+  transactions: ['Transaksi','Riwayat semua transaksi'],
+  budget:       ['Budget','Anggaran per kategori'],
+  debt:         ['Hutang & Piutang','Kelola hutang dan piutang Anda'],
+  statistics:   ['Statistik','Analisis keuangan mendalam'],
+  settings:     ['Pengaturan','Konfigurasi aplikasi']
+};
+
+const S = {
+  page:'dashboard', month:'',
+  txs:[], cats:[], budgets:[], debts:[],
+  dash:null, settings:{currency:'IDR', name:'Pengguna'},
+  txFilter:'all', debtFilter:'all',
+  charts:{}, pinMode:'verify',
+  pinBuf:'', pinBusy:false,
+  pinOldBuf:'', pinNewBuf:'', pinStage:'new'
+};
+
+/* ═══════════════════════════════════════════════════
+   PIN HELPERS
+═══════════════════════════════════════════════════ */
+// PIN disimpan plaintext di localStorage (untuk re-hash offline).
+// Salt & hash disimpan juga — hash dikirim ke server saat login.
+// (PIN_HASHED_KEY dideklarasikan di blok STATE & CONSTANTS)
+
+function getPin()       { return localStorage.getItem(PIN_KEY); }
+function setPin(p)     { localStorage.setItem(PIN_KEY, p); }
+function getPinSalt()  { return localStorage.getItem(PIN_SALT); }
+function setPinSalt(s) { localStorage.setItem(PIN_SALT, s); }
+function isPinHashed() { return localStorage.getItem(PIN_HASHED_KEY) === '1'; }
+function markPinHashed(){ localStorage.setItem(PIN_HASHED_KEY, '1'); }
+function sesActive(){ return sessionStorage.getItem(SES_KEY) === '1'; }
+function sesStart() { sessionStorage.setItem(SES_KEY, '1'); }
+function sesClear() { sessionStorage.removeItem(SES_KEY); }
+
+// C2: Generate random salt (16 bytes → hex string)
+function generateSalt() {
+  const arr = new Uint8Array(16);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, b => ('0' + b.toString(16)).slice(-2)).join('');
+}
+
+// C2: Hash PIN menggunakan PBKDF2-SHA256 (100.000 iterations)
+async function hashPin(pin, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(pin), 'PBKDF2', false, ['deriveBits']
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash: 'SHA-256' },
+    keyMaterial, 256
+  );
+  return Array.from(new Uint8Array(bits), b => ('0' + b.toString(16)).slice(-2)).join('');
+}
+
+function initAuth() {
+  // Restore session bila token & session marker masih ada
+  if (sesActive() && localStorage.getItem(TOKEN_KEY)) { enterApp(); return; }
+  // Force setup PIN bila belum ada PIN tersimpan
+  if (!getPin()) {
+    S.pinMode = 'set';
+    document.getElementById('landingPage').classList.add('gone');
+    document.getElementById('authScreen').style.display = 'flex';
+    document.getElementById('authTitle').textContent = 'Buat PIN Baru';
+    document.getElementById('authSub').textContent = 'Untuk keamanan, buat PIN 4 digit pertama Anda';
+    document.getElementById('authMsg').textContent = '';
+    return;
+  }
+  document.getElementById('landingPage').classList.remove('gone');
+  document.getElementById('authScreen').style.display = 'none';
+}
+
+function showPinScreen() {
+  document.getElementById('landingPage').classList.add('gone');
+  document.getElementById('authScreen').style.display = 'flex';
+}
+
+function pinPress(d) {
+  if (S.pinBuf.length >= 4 || S.pinBusy) return;
+  S.pinBuf += d;
+  updateDots();
+  if (S.pinBuf.length === 4) setTimeout(checkPin, 120);
+}
+
+function pinDel() {
+  if (S.pinBusy) return;
+  S.pinBuf = S.pinBuf.slice(0, -1);
+  updateDots();
+  document.getElementById('authMsg').textContent = '';
+}
+
+function updateDots(state) {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('d' + i);
+    d.className = 'pin-dot';
+    if (i < S.pinBuf.length) d.classList.add(state || 'filled');
+  }
+}
+
+async function checkPin() {
+  if (S.pinBuf.length !== 4) return;
+  S.pinBusy = true;
+
+  try {
+    if (S.pinMode === 'set') {
+      // === MODE SET ===
+      if (!getPin()) {
+        // Setup awal: belum ada PIN lokal → registrasi pertama via login(isSetup)
+        const salt = generateSalt();
+        const pinHash = await hashPin(S.pinBuf, salt);
+        const res = await gas('login', { pinHash: pinHash, salt: salt, isSetup: true });
+        if (res.success && res.token) {
+          setPin(S.pinBuf);
+          setPinSalt(salt);
+          localStorage.setItem(TOKEN_KEY, res.token);
+          markPinHashed();
+          updateDots('ok');
+          document.getElementById('authMsg').style.color = 'var(--income)';
+          document.getElementById('authMsg').textContent = 'PIN berhasil dibuat!';
+          setTimeout(enterApp, 600);
+        } else {
+          updateDots('error');
+          document.getElementById('authMsg').textContent = res.error || 'Gagal mendaftarkan PIN';
+          setTimeout(() => { S.pinBuf = ''; updateDots(); document.getElementById('authMsg').textContent = ''; }, 1200);
+        }
+      } else if (S.pinStage === 'new') {
+        // Ganti PIN tahap 1: simpan PIN baru, minta PIN lama
+        S.pinNewBuf = S.pinBuf;
+        S.pinBuf = '';
+        S.pinStage = 'old';
+        updateDots();
+        document.getElementById('authSub').textContent = 'Masukkan PIN LAMA untuk verifikasi';
+        document.getElementById('authMsg').textContent = '';
+      } else if (S.pinStage === 'old') {
+        // Ganti PIN tahap 2: PIN lama diinput → verifikasi via changePin
+        const oldSalt = getPinSalt();
+        if (!oldSalt) {
+          updateDots('error');
+          document.getElementById('authMsg').textContent = 'PIN lama tidak ditemukan. Setup ulang diperlukan.';
+          setTimeout(() => { S.pinBuf = ''; S.pinStage = 'new'; updateDots(); document.getElementById('authMsg').textContent = ''; }, 1500);
+          return;
+        }
+        const oldPinHash = await hashPin(S.pinBuf, oldSalt);
+        const newSalt = generateSalt();
+        const newPinHash = await hashPin(S.pinNewBuf, newSalt);
+        const res = await gas('changePin', {
+          oldPinHash: oldPinHash, oldSalt: oldSalt,
+          newPinHash: newPinHash, newSalt: newSalt
+        });
+        if (res.success) {
+          setPin(S.pinNewBuf);
+          setPinSalt(newSalt);
+          markPinHashed();
+          updateDots('ok');
+          document.getElementById('authMsg').style.color = 'var(--income)';
+          document.getElementById('authMsg').textContent = 'PIN berhasil diganti!';
+          setTimeout(() => {
+            S.pinBuf = ''; S.pinNewBuf = ''; S.pinStage = 'new';
+            S.pinMode = 'verify';
+            updateDots();
+            document.getElementById('authMsg').textContent = '';
+            document.getElementById('authTitle').textContent = 'SmartPlan';
+            document.getElementById('authSub').textContent = 'Masukkan PIN baru Anda untuk melanjutkan';
+          }, 1200);
+        } else {
+          updateDots('error');
+          document.getElementById('authMsg').textContent = res.error || 'PIN lama salah';
+          setTimeout(() => { S.pinBuf = ''; S.pinStage = 'new'; updateDots(); document.getElementById('authMsg').textContent = ''; }, 1200);
+        }
+      }
+    } else {
+      // === MODE VERIFY (login normal) ===
+      const salt = getPinSalt();
+      if (!salt) {
+        updateDots('error');
+        document.getElementById('authMsg').textContent = 'PIN perlu dibuat ulang. Gunakan mode "Buat PIN".';
+        setTimeout(() => { S.pinBuf = ''; updateDots(); document.getElementById('authMsg').textContent = ''; }, 1500);
+        return;
+      }
+      const pinHash = await hashPin(S.pinBuf, salt);
+      const res = await gas('login', { pinHash: pinHash, salt: salt });
+      if (res.success && res.token) {
+        localStorage.setItem(TOKEN_KEY, res.token);
+        markPinHashed();
+        updateDots('ok');
+        setTimeout(enterApp, 400);
+      } else {
+        updateDots('error');
+        document.getElementById('authMsg').textContent = res.error || 'PIN salah, coba lagi';
+        setTimeout(() => { S.pinBuf = ''; updateDots(); document.getElementById('authMsg').textContent = ''; }, 800);
+      }
+    }
+  } catch(e) {
+    console.error('PIN auth error:', e);
+    updateDots('error');
+    document.getElementById('authMsg').textContent = 'Error: ' + e.message;
+    setTimeout(() => { S.pinBuf = ''; S.pinStage = 'new'; updateDots(); document.getElementById('authMsg').textContent = ''; }, 1200);
+  } finally {
+    S.pinBusy = false;
+  }
+}
+
+function togglePinMode() {
+  S.pinMode = S.pinMode === 'verify' ? 'set' : 'verify';
+  S.pinBuf = '';
+  S.pinOldBuf = '';
+  S.pinStage = 'new'; // flow: 'new' (input pin baru) → 'old' (input pin lama utk verifikasi)
+  updateDots();
+  document.getElementById('authMsg').textContent = '';
+  if (S.pinMode === 'set') {
+    // Bila user sudah punya PIN → ini adalah ganti PIN (perlu verifikasi PIN lama)
+    if (getPin()) {
+      S.pinStage = 'new';
+      document.getElementById('authTitle').textContent = 'Ganti PIN';
+      document.getElementById('authSub').textContent = 'Masukkan PIN baru 4 digit';
+    } else {
+      document.getElementById('authTitle').textContent = 'Buat PIN Baru';
+      document.getElementById('authSub').textContent = 'Masukkan PIN 4 digit baru Anda';
+    }
+  } else {
+    document.getElementById('authTitle').textContent = 'SmartPlan';
+    document.getElementById('authSub').textContent = 'Masukkan PIN Anda untuk melanjutkan';
+  }
+}
+
+function enterApp() {
+  sesStart();
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('loadingScreen').classList.remove('gone');
+  loadAll();
+}
+
+function doLogout() {
+  if (!confirm('Kunci dan keluar dari aplikasi?')) return;
+  // C1: Hapus token client-side (server-side token akan invalid setelah login berikutnya)
+  localStorage.removeItem(TOKEN_KEY);
+  sesClear();
+  S.txs = []; S.cats = []; S.budgets = []; S.debts = []; S.dash = null;
+  Object.values(S.charts).forEach(c => { try { c.destroy(); } catch(e) {} });
+  S.charts = {};
+  document.getElementById('appShell').classList.remove('visible');
+  S.pinBuf = ''; S.pinMode = 'verify';
+  S.pinNewBuf = ''; S.pinOldBuf = ''; S.pinStage = 'new';
+  updateDots();
+  document.getElementById('authTitle').textContent = 'SmartPlan';
+  document.getElementById('authSub').textContent = 'Masukkan PIN Anda untuk melanjutkan';
+  document.getElementById('authMsg').textContent = '';
+  document.getElementById('landingPage').classList.remove('gone');
+  document.getElementById('authScreen').style.display = 'none';
+  toast('Berhasil keluar', 'inf');
+}
+
+function openChangePIN() {
+  document.getElementById('pinOld').value = '';
+  document.getElementById('pinNew').value = '';
+  document.getElementById('pinConf').value = '';
+  openModal('pinModal');
+}
+
+async function changePIN() {
+  const old = document.getElementById('pinOld').value;
+  const nw  = document.getElementById('pinNew').value;
+  const cf  = document.getElementById('pinConf').value;
+  if (!/^\d{4}$/.test(old))         { toast('PIN lama harus 4 digit angka', 'err'); return; }
+  if (!/^\d{4}$/.test(nw))          { toast('PIN baru harus 4 digit angka', 'err'); return; }
+  if (nw !== cf)                    { toast('Konfirmasi PIN tidak cocok', 'err'); return; }
+
+  const oldSalt = getPinSalt();
+  if (!oldSalt) { toast('PIN lokal tidak ditemukan. Setup ulang diperlukan.', 'err'); return; }
+
+  try {
+    const oldPinHash = await hashPin(old, oldSalt);
+    const newSalt = generateSalt();
+    const newPinHash = await hashPin(nw, newSalt);
+    const res = await gas('changePin', {
+      oldPinHash: oldPinHash, oldSalt: oldSalt,
+      newPinHash: newPinHash, newSalt: newSalt
+    });
+    if (res.success) {
+      setPin(nw);
+      setPinSalt(newSalt);
+      markPinHashed();
+      document.getElementById('pinOld').value = '';
+      document.getElementById('pinNew').value = '';
+      document.getElementById('pinConf').value = '';
+      closeModal('pinModal');
+      toast('PIN berhasil diubah! 🔐', 'ok');
+    } else {
+      toast(res.error || 'Gagal mengubah PIN', 'err');
+    }
+  } catch(e) {
+    console.error('changePIN error:', e);
+    toast('Error: ' + e.message, 'err');
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════ */
+window.onload = function() {
+  initMonthSel();
+  initAuth();
+};
+
+function initMonthSel() {
+  const sel = document.getElementById('monthSel');
+  const now = new Date();
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const v = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    const l = d.toLocaleDateString('id-ID', {month:'long', year:'numeric'});
+    const o = document.createElement('option');
+    o.value = v; o.textContent = l;
+    sel.appendChild(o);
+  }
+  S.month = sel.value;
+  updateSbMonth();
+}
+
+async function loadAll() {
+  try {
+    await Promise.all([loadSettings(), loadCats()]);
+    await Promise.all([loadDash(), loadTxs(), loadBudgets(), loadDebts()]);
+  } catch(e) {
+    toast('Gagal memuat: ' + e.message, 'err');
+  } finally {
+    document.getElementById('loadingScreen').classList.add('gone');
+    document.getElementById('appShell').classList.add('visible');
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   LOADERS
+═══════════════════════════════════════════════════ */
+async function loadSettings() {
+  const r = await gas('getSettings');
+  if (!r || !r.success) return;
+  S.settings = { ...S.settings, ...r.data };
+  document.getElementById('sbName').textContent  = S.settings.name || 'Pengguna';
+  document.getElementById('sbAva').textContent   = (S.settings.name || 'U')[0].toUpperCase();
+  const sn = document.getElementById('setName'); if (sn) sn.value = S.settings.name || '';
+  const sc = document.getElementById('setCurr'); if (sc) sc.value = S.settings.currency || 'IDR';
+  document.getElementById('txCurrPfx').textContent = currSym();
+  document.getElementById('bdgPfx').textContent    = currSym();
+  document.getElementById('payPfx').textContent    = currSym();
+}
+
+async function loadCats() {
+  const r = await gas('getCategories');
+  if (r && r.success) { S.cats = r.data; populateCatSelects(); renderCatChips(); }
+}
+
+async function loadTxs() {
+  const r = await gas('getTransactions', {month: S.month});
+  if (r && r.success) {
+    S.txs = r.data;
+    document.getElementById('txBadge').textContent = S.txs.length;
+    renderTxList();
+  }
+}
+
+async function loadDash() {
+  const r = await gas('getDashboardData', {month: S.month});
+  if (r && r.success) { S.dash = r.data; renderDash(); }
+}
+
+async function loadBudgets() {
+  const r = await gas('getBudgets', {month: S.month});
+  if (r && r.success) { S.budgets = r.data; renderBudgets(); }
+}
+
+async function loadDebts() {
+  const r = await gas('getDebts', {});
+  if (r && r.success) {
+    S.debts = r.data;
+    const aktif = S.debts.filter(d => d.status === 'aktif').length;
+    const badge = document.getElementById('debtBadge');
+    if (badge) badge.textContent = aktif;
+    renderDebts();
+    if (document.getElementById('dashHutang')) {
+      const tH = S.debts.filter(d=>d.type==='hutang'&&d.status==='aktif').reduce((s,d)=>s+d.remainAmount,0);
+      const tP = S.debts.filter(d=>d.type==='piutang'&&d.status==='aktif').reduce((s,d)=>s+d.remainAmount,0);
+      document.getElementById('dashHutang').textContent  = fmt(tH);
+      document.getElementById('dashPiutang').textContent = fmt(tP);
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════════════ */
+function nav(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('pg-' + p).classList.add('active');
+  document.querySelector('[data-page="' + p + '"]')?.classList.add('active');
+  S.page = p;
+  const m = PAGE_META[p] || ['',''];
+  document.getElementById('pgTitle').textContent = m[0];
+  document.getElementById('pgSub').textContent   = m[1];
+  if (p === 'statistics') setTimeout(renderStatCharts, 80);
+  closeSidebar();
+}
+
+document.querySelectorAll('[data-page]').forEach(el => {
+  el.addEventListener('click', function() { nav(this.dataset.page); });
+});
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sideOverlay').classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sideOverlay').classList.remove('show');
+}
+
+/* ═══════════════════════════════════════════════════
+   MONTH
+═══════════════════════════════════════════════════ */
+async function onMonthChange() {
+  S.month = document.getElementById('monthSel').value;
+  updateSbMonth();
+  toast('Memuat data...', 'inf');
+  await Promise.all([loadDash(), loadTxs(), loadBudgets(), loadDebts()]);
+  if (S.page === 'statistics') setTimeout(renderStatCharts, 80);
+}
+
+function updateSbMonth() {
+  const sel = document.getElementById('monthSel');
+  const lbl = sel.options[sel.selectedIndex]?.textContent || '—';
+  document.getElementById('sbMonth').textContent = lbl.split(' ')[0];
+}
+
+/* ═══════════════════════════════════════════════════
+   FORMAT
+═══════════════════════════════════════════════════ */
+function currSym() {
+  return {IDR:'Rp', USD:'$', EUR:'€', SGD:'S$'}[S.settings.currency || 'IDR'] || 'Rp';
+}
+function fmt(n) {
+  const c = S.settings.currency || 'IDR';
+  const s = currSym();
+  if (c === 'IDR') return s + ' ' + Math.abs(n||0).toLocaleString('id-ID');
+  return s + Math.abs(n||0).toLocaleString('en-US', {minimumFractionDigits:2});
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'});
+}
+function abbr(v) {
+  if (v>=1e9) return (v/1e9).toFixed(1)+'M';
+  if (v>=1e6) return (v/1e6).toFixed(1)+'jt';
+  if (v>=1e3) return (v/1e3).toFixed(0)+'rb';
+  return v;
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ═══════════════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════════════ */
+function renderDash() {
+  const d = S.dash; if (!d) return;
+  const incCnt = S.txs.filter(t => t.type === 'income').length;
+  const expCnt = S.txs.filter(t => t.type === 'expense').length;
+  document.getElementById('scBal').textContent    = fmt(d.kasBalance || 0);
+  document.getElementById('scInc').textContent    = fmt(d.totalIncome || 0);
+  document.getElementById('scExp').textContent    = fmt(d.totalExpense || 0);
+  document.getElementById('scSav').textContent    = (d.savingsRate || 0) + '%';
+  document.getElementById('scIncMeta').textContent = incCnt + ' transaksi';
+  document.getElementById('scExpMeta').textContent = expCnt + ' transaksi';
+  document.getElementById('dashHutang').textContent  = fmt(d.totalHutang || 0);
+  document.getElementById('dashPiutang').textContent = fmt(d.totalPiutang || 0);
+  const bm = document.getElementById('scBalMeta');
+  bm.textContent = (d.kasBalance||0) >= 0 ? '✓ Keuangan positif' : '⚠ Lebih banyak keluar';
+  renderRecentTx(d.recentTransactions || []);
+  renderCatBars(d.categoryBreakdown || {});
+  renderTrendChart(d.monthlyTrend || []);
+  renderDonut(d.categoryBreakdown || {});
+}
+
+function renderRecentTx(txs) {
+  const tb = document.getElementById('recentTxBody');
+  if (!txs.length) { tb.innerHTML = '<tr><td colspan="4"><div class="empty"><div class="empty-ico">📭</div><div class="empty-tit">Belum ada transaksi</div></div></td></tr>'; return; }
+  tb.innerHTML = txs.slice(0,8).map(t => {
+    const cat = S.cats.find(c => c.name === t.category);
+    const contact = t.contactName ? '<div class="tx-contact"><i class="fas fa-user" style="font-size:9px"></i> ' + esc(t.contactName) + '</div>' : '';
+    return '<tr><td><div class="tx-desc">' + esc(t.description) + '</div>' + contact + '</td>' +
+      '<td><span class="tx-badge">' + esc(cat?.icon||'📌') + ' ' + esc(t.category) + '</span></td>' +
+      '<td><span class="tx-date">' + fmtDate(t.date) + '</span></td>' +
+      '<td><span class="tx-amt ' + (t.type==='income'?'inc':'exp') + '">' + (t.type==='income'?'+':'-') + fmt(t.amount) + '</span></td></tr>';
+  }).join('');
+}
+
+function renderCatBars(bk) {
+  const el = document.getElementById('catBars');
+  const ents = Object.entries(bk).sort((a,b) => b[1]-a[1]).slice(0,5);
+  if (!ents.length) { el.innerHTML = '<div class="empty" style="padding:20px"><div class="empty-ico" style="font-size:28px">📊</div><div class="empty-tit" style="font-size:13px">Tidak ada data</div></div>'; return; }
+  const total = ents.reduce((s,e) => s+e[1], 0);
+  el.innerHTML = ents.map(([cat,amt],i) => {
+    const pct = total > 0 ? Math.round(amt/total*100) : 0;
+    const c = S.cats.find(x => x.name === cat);
+    return '<div class="cat-bar-item"><div class="cb-hdr"><div class="cb-name">' + esc(c?.icon||'📌') + ' ' + esc(cat) + '</div><div class="cb-amt">' + fmt(amt) + '</div></div>' +
+      '<div class="cb-track"><div class="cb-fill" style="width:' + pct + '%;background:' + COLORS[i%COLORS.length] + '"></div></div></div>';
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════
+   CHARTS (DENGAN PROTEKSI ELEMEN TERSEMBUNYI)
+═══════════════════════════════════════════════════ */
+function chTip() {
+  return { backgroundColor:'#fff', borderColor:'rgba(26,29,58,.1)', borderWidth:1.5, titleColor:'#1A1D3A', bodyColor:'#5A5E82', titleFont:{family:'Inter, sans-serif',size:12,weight:'700'}, bodyFont:{family:'Inter, sans-serif',size:11}, padding:10, cornerRadius:8, callbacks:{label: ctx => ' ' + fmt(ctx.raw)} };
+}
+function chScales() {
+  return { x:{grid:{color:'rgba(26,29,58,.05)'},ticks:{color:'#9396B5',font:{family:'monospace',size:10}}}, y:{grid:{color:'rgba(26,29,58,.05)'},ticks:{color:'#9396B5',font:{family:'monospace',size:10},callback:v=>abbr(v)}} };
+}
+
+function renderTrendChart(trend) {
+  const ctx = document.getElementById('trendChart'); if (!ctx) return;
+  if (S.charts.trend) try { S.charts.trend.destroy(); } catch(e) {}
+  const labels = trend.map(t => { const [y,m] = t.month.split('-'); return new Date(y,m-1).toLocaleDateString('id-ID',{month:'short',year:'2-digit'}); });
+  
+  try {
+    S.charts.trend = new Chart(ctx, {
+      type:'line',
+      data:{ labels, datasets:[
+        {label:'Pemasukan', data:trend.map(t=>t.income), borderColor:'#1DB97A', backgroundColor:'rgba(29,185,122,.08)', tension:.4, fill:true, pointRadius:4, pointBackgroundColor:'#1DB97A', pointBorderColor:'#fff', pointBorderWidth:2},
+        {label:'Pengeluaran', data:trend.map(t=>t.expense), borderColor:'#FF5A5A', backgroundColor:'rgba(255,90,90,.08)', tension:.4, fill:true, pointRadius:4, pointBackgroundColor:'#FF5A5A', pointBorderColor:'#fff', pointBorderWidth:2}
+      ]},
+      options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:chTip()}, scales:chScales()}
+    });
+  } catch (error) {
+    console.warn("Chart Trend tidak dapat diinisialisasi (elemen kemungkinan tersembunyi):", error);
+  }
+}
+
+function renderDonut(bk) {
+  const svg = document.getElementById('donutSvg');
+  const leg = document.getElementById('donutLeg');
+  const ents = Object.entries(bk).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  
+  const cx=65, cy=65, r=48;
+  
+  // Kasus jika belum ada data transaksi sama sekali
+  if (!ents.length) { 
+    svg.innerHTML = '<circle cx="65" cy="65" r="48" fill="none" stroke="#E2E5F5" stroke-width="14"/>'; 
+    leg.innerHTML = '<div style="color:var(--txt3);font-size:12px">Tidak ada data</div>'; 
+    return; 
+  }
+  
+  const total = ents.reduce((s,e)=>s+e[1],0);
+  
+  // FIX: Mengatasi bug SVG Arc jika hanya ada 1 kategori (100% slice)
+  if (ents.length === 1) {
+    const [cat, amt] = ents[0];
+    const col = COLORS[0];
+    svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${col}" stroke-width="14" opacity="0.85"/>` +
+                    `<circle cx="${cx}" cy="${cy}" r="32" fill="#fff"/>` +
+                    `<text x="${cx}" y="${cy-5}" text-anchor="middle" fill="#9396B5" font-size="9">TOTAL</text>` +
+                    `<text x="${cx}" y="${cy+10}" text-anchor="middle" fill="#1A1D3A" font-size="12" font-weight="700">${abbr(total)}</text>`;
+    leg.innerHTML = `<div class="leg-row"><div class="leg-dot" style="background:${col}"></div><div class="leg-name">${esc(cat)}</div><div class="leg-pct">100%</div></div>`;
+    return;
+  }
+
+  let ang = -Math.PI/2, paths='', legHTML='';
+  ents.forEach(([cat,amt],i) => {
+    const a = (amt/total)*2*Math.PI, ea = ang+a;
+    const x1=cx+r*Math.cos(ang), y1=cy+r*Math.sin(ang);
+    const x2=cx+r*Math.cos(ea),  y2=cy+r*Math.sin(ea);
+    const la = a>Math.PI?1:0;
+    const col = COLORS[i%COLORS.length];
+    const pct = (amt/total*100).toFixed(1);
+    paths += '<path d="M'+cx+','+cy+' L'+x1+','+y1+' A'+r+','+r+' 0 '+la+' 1 '+x2+','+y2+' Z" fill="'+col+'" opacity=".85"/>';
+    legHTML += '<div class="leg-row"><div class="leg-dot" style="background:'+col+'"></div><div class="leg-name">'+esc(cat)+'</div><div class="leg-pct">'+pct+'%</div></div>';
+    ang = ea;
+  });
+  svg.innerHTML = paths + '<circle cx="'+cx+'" cy="'+cy+'" r="32" fill="#fff"/><text x="'+cx+'" y="'+(cy-5)+'" text-anchor="middle" fill="#9396B5" font-size="9">TOTAL</text><text x="'+cx+'" y="'+(cy+10)+'" text-anchor="middle" fill="#1A1D3A" font-size="12" font-weight="700">'+abbr(total)+'</text>';
+  leg.innerHTML = legHTML;
+}
+
+/* ═══════════════════════════════════════════════════
+   TRANSACTIONS PAGE
+═══════════════════════════════════════════════════ */
+function renderTxList() {
+  const search = (document.getElementById('txSearch')?.value || '').toLowerCase();
+  let list = S.txs;
+  if (S.txFilter !== 'all') list = list.filter(t => t.type === S.txFilter);
+  if (search) list = list.filter(t => (t.description + t.category + (t.note||'') + (t.contactName||'')).toLowerCase().includes(search));
+  document.getElementById('txCount').textContent = '— ' + list.length;
+  const tb = document.getElementById('allTxBody');
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="5"><div class="empty"><div class="empty-ico">🔍</div><div class="empty-tit">Tidak ada transaksi</div></div></td></tr>'; return; }
+  tb.innerHTML = list.map(t => {
+    const cat = S.cats.find(c => c.name === t.category);
+    const contact = t.contactName ? '<div class="tx-contact"><i class="fas fa-user" style="font-size:9px"></i> ' + esc(t.contactName) + (t.contactPhone ? ' · ' + esc(t.contactPhone) : '') + '</div>' : '';
+    const subBadge = t.subType && t.subType !== 'kas' ? ' <span class="tx-badge sub-' + t.subType + '">' + (t.subType==='hutang'?'😰 Hutang':'🤝 Piutang') + '</span>' : '';
+    return '<tr>' +
+      '<td><div class="tx-desc">' + esc(t.description) + '</div>' + contact + '</td>' +
+      '<td><span class="tx-badge">' + esc(cat?.icon||'📌') + ' ' + esc(t.category) + '</span>' + subBadge + '</td>' +
+      '<td><span class="tx-date">' + fmtDate(t.date) + '</span></td>' +
+      '<td><span class="tx-amt ' + (t.type==='income'?'inc':'exp') + '">' + (t.type==='income'?'+':'-') + fmt(t.amount) + '</span></td>' +
+      '<td><div class="tx-acts"><button class="btn btn-outline btn-sm btn-icon" onclick="editTx(\'' + t.id + '\')"><i class="fas fa-pen"></i></button><button class="btn btn-danger btn-sm btn-icon" onclick="delTx(\'' + t.id + '\')"><i class="fas fa-trash"></i></button></div></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function setTxFilter(f, el) {
+  document.querySelectorAll('#pg-transactions .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  S.txFilter = f;
+  renderTxList();
+}
+
+/* ═══════════════════════════════════════════════════
+   BUDGET PAGE
+═══════════════════════════════════════════════════ */
+function renderBudgets() {
+  const grid = document.getElementById('budgetGrid'); if (!grid) return;
+  const monthBudgets = S.budgets.filter(b => b.month === S.month);
+  if (!monthBudgets.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🎯</div><div class="empty-tit">Belum ada budget bulan ini</div><div class="empty-desc">Klik Set Budget untuk mulai</div></div>';
+    return;
+  }
+  const spending = {};
+  S.txs.filter(t => t.type === 'expense').forEach(t => { spending[t.category] = (spending[t.category]||0) + t.amount; });
+  grid.innerHTML = monthBudgets.map(b => {
+    const cat   = S.cats.find(c => c.name === b.category);
+    const spent = spending[b.category] || 0;
+    const pct   = b.amount > 0 ? Math.min(spent/b.amount*100, 100) : 0;
+    const rem   = b.amount - spent;
+    const cls   = pct >= 100 ? 'over' : pct >= 75 ? 'warn' : 'safe';
+    const remColor = rem >= 0 ? 'var(--income)' : 'var(--expense)';
+    return '<div class="b-card"><div class="bc-top"><div class="bc-cat">' + esc(cat?.icon||'📌') + ' ' + esc(b.category) + '</div><div class="bc-limit">Limit: ' + fmt(b.amount) + '</div></div>' +
+      '<div class="bc-slbl">Terpakai</div>' +
+      '<div class="bc-spent" style="color:' + (cls==='over'?'var(--expense)':cls==='warn'?'#FFB347':'var(--income)') + '">' + fmt(spent) + '</div>' +
+      '<div class="bc-track"><div class="bc-fill ' + cls + '" style="width:' + pct + '%"></div></div>' +
+      '<div class="bc-footer"><span style="font-family:monospace;color:var(--txt3)">' + Math.round(pct) + '% terpakai</span><span style="color:' + remColor + ';font-weight:700">' + (rem>=0?'Sisa: '+fmt(rem):'Lebih: '+fmt(Math.abs(rem))) + '</span></div></div>';
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════
+   DEBT PAGE (DENGAN TOMBOL EDIT & HAPUS UTUH)
+═══════════════════════════════════════════════════ */
+function setDebtFilter(f, el) {
+  document.querySelectorAll('#pg-debt .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  S.debtFilter = f;
+  renderDebts();
+}
+
+function renderDebts() {
+  const grid = document.getElementById('debtGrid'); if (!grid) return;
+  
+  // Sinkronisasi status active chip filter
+  document.querySelectorAll('#pg-debt .chip').forEach(c => c.classList.remove('active'));
+  const chipMap = {all:'dcAll', hutang:'dcH', piutang:'dcP', lunas:'dcD'};
+  const activeChip = document.getElementById(chipMap[S.debtFilter] || 'dcAll');
+  if (activeChip) activeChip.classList.add('active');
+  
+  let list = S.debts;
+  if      (S.debtFilter === 'hutang')  list = list.filter(d => d.type === 'hutang'  && d.status === 'aktif');
+  else if (S.debtFilter === 'piutang') list = list.filter(d => d.type === 'piutang' && d.status === 'aktif');
+  else if (S.debtFilter === 'lunas')   list = list.filter(d => d.status === 'lunas');
+  else                                 list = list.filter(d => d.status === 'aktif');
+
+  const totalH = list.filter(d=>d.type==='hutang').reduce((s,d)=>s+d.remainAmount,0);
+  const totalP = list.filter(d=>d.type==='piutang').reduce((s,d)=>s+d.remainAmount,0);
+  const lbl = document.getElementById('debtSumLbl');
+  if (lbl && S.debtFilter !== 'lunas') {
+    lbl.innerHTML = (totalH>0?'<span style="color:var(--expense);font-weight:700">Hutang: '+fmt(totalH)+'</span>':'') +
+      (totalH>0&&totalP>0?' &nbsp;|&nbsp; ':'') +
+      (totalP>0?'<span style="color:var(--p3);font-weight:700">Piutang: '+fmt(totalP)+'</span>':'');
+  } else if (lbl) lbl.textContent = '';
+
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🤝</div><div class="empty-tit">Tidak ada data</div><div class="empty-desc">Tambah transaksi hutang/piutang terlebih dahulu</div></div>';
+    return;
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  grid.innerHTML = list.map(d => {
+    const pct = d.totalAmount > 0 ? Math.min(d.paidAmount/d.totalAmount*100, 100) : 0;
+    const isOverdue = d.dueDate && d.dueDate < today && d.status === 'aktif';
+    const pill = d.status === 'lunas' ? 'lunas' : d.type;
+    const pillTxt = d.status === 'lunas' ? '✅ Lunas' : d.type === 'hutang' ? '😰 Hutang' : '🤝 Piutang';
+    
+    const payBtn = d.status === 'aktif' ?
+      '<button class="btn btn-primary btn-sm" onclick="openPayModal(\'' + d.id + '\')">' +
+        '<i class="fas fa-' + (d.type==='hutang'?'money-bill-wave':'hand-holding-dollar') + '"></i> ' +
+        (d.type==='hutang'?'Bayar':'Terima') + '</button>' : '';
+        
+    // FIX: Menambahkan tombol Edit dan Hapus yang sebelumnya hilang dari UI renderDebts()
+    return '<div class="dc-card ' + pill + '">' +
+      '<div class="dc-head"><div><div class="dc-name">' + esc(d.contactName) + '</div><div class="dc-phone"><i class="fas fa-phone" style="font-size:9px"></i> ' + (esc(d.contactPhone)||'—') + '</div></div>' +
+      '<span class="dc-pill ' + pill + '">' + pillTxt + '</span></div>' +
+      '<div class="dc-body"><div class="dc-desc">' + esc(d.description) + '</div>' +
+      '<div class="dc-amts"><div><div class="dc-albl">Total</div><div class="dc-aval" style="color:var(--txt1)">' + fmt(d.totalAmount) + '</div></div>' +
+      '<div style="text-align:right"><div class="dc-albl">Sisa</div><div class="dc-aval" style="color:' + (d.type==='hutang'?'var(--expense)':'var(--p3)') + '">' + fmt(d.remainAmount) + '</div></div></div>' +
+      '<div class="dc-track"><div class="dc-fill ' + pill + '" style="width:' + pct + '%"></div></div>' +
+      '<div class="dc-foot"><span class="dc-due' + (isOverdue?' overdue':'') + '">' + (d.dueDate?'Jatuh tempo: '+fmtDate(d.dueDate):'Tanpa jatuh tempo') + (isOverdue?' ⚠':'') + '</span>' +
+      '<div class="dc-acts">' + 
+        '<button class="btn btn-outline btn-sm btn-icon" style="margin-right: 4px;" onclick="openEditDebt(\'' + d.id + '\')"><i class="fas fa-pen"></i></button>' +
+        '<button class="btn btn-danger btn-sm btn-icon" style="margin-right: 6px;" onclick="confirmDelDebt(\'' + d.id + '\')"><i class="fas fa-trash"></i></button>' +
+        payBtn + 
+      '</div></div>' +
+      '</div></div>';
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════
+   STAT CHARTS (PROTERKSI ELEMEN TERSEMBUNYI)
+═══════════════════════════════════════════════════ */
+function renderStatCharts() {
+  const d = S.dash; if (!d) return;
+  const trend = d.monthlyTrend || [];
+  const cmpCtx = document.getElementById('compareChart');
+  
+  if (cmpCtx) {
+    if (S.charts.cmp) try { S.charts.cmp.destroy(); } catch(e) {}
+    try {
+      S.charts.cmp = new Chart(cmpCtx, {
+        type:'bar',
+        data:{ labels:trend.map(t=>{const[y,m]=t.month.split('-');return new Date(y,m-1).toLocaleDateString('id-ID',{month:'short'});}),
+          datasets:[{label:'Pemasukan',data:trend.map(t=>t.income),backgroundColor:'rgba(29,185,122,.75)',borderRadius:6,borderSkipped:false},{label:'Pengeluaran',data:trend.map(t=>t.expense),backgroundColor:'rgba(255,90,90,.75)',borderRadius:6,borderSkipped:false}]},
+        options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true,labels:{color:'#5A5E82',usePointStyle:true,font:{size:11}}},tooltip:chTip()}, scales:chScales()}
+      });
+    } catch(e) { console.warn("Chart Compare gagal dirender:", e); }
+  }
+  
+  const catCtx = document.getElementById('catChart');
+  if (catCtx && d.categoryBreakdown) {
+    if (S.charts.catPie) try { S.charts.catPie.destroy(); } catch(e) {}
+    try {
+      const ents = Object.entries(d.categoryBreakdown).sort((a,b)=>b[1]-a[1]).slice(0,7);
+      S.charts.catPie = new Chart(catCtx, {
+        type:'doughnut',
+        data:{ labels:ents.map(e=>e[0]), datasets:[{data:ents.map(e=>e[1]),backgroundColor:COLORS.slice(0,ents.length),borderWidth:0,hoverOffset:6}]},
+        options:{responsive:true, maintainAspectRatio:false, cutout:'60%', plugins:{legend:{display:true,position:'right',labels:{color:'#5A5E82',usePointStyle:true,font:{size:10}}},tooltip:chTip()}}
+      });
+    } catch(e) { console.warn("Chart Kategori gagal dirender:", e); }
+  }
+  
+  const dayCtx = document.getElementById('dailyChart');
+  if (dayCtx && d.dailyData) {
+    if (S.charts.daily) try { S.charts.daily.destroy(); } catch(e) {}
+    try {
+      const days = Object.keys(d.dailyData).sort();
+      S.charts.daily = new Chart(dayCtx, {
+        type:'bar',
+        data:{ labels:days.map(d=>d.slice(8)), datasets:[{data:days.map(d2=>d.dailyData[d2]),backgroundColor:'rgba(108,99,255,.6)',hoverBackgroundColor:'#6C63FF',borderRadius:4,borderSkipped:false}]},
+        options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:chTip()}, scales:chScales()}
+      });
+    } catch(e) { console.warn("Chart Harian gagal dirender:", e); }
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   MODAL HELPERS
+═══════════════════════════════════════════════════ */
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-bg').forEach(bg => {
+  bg.addEventListener('click', e => { if (e.target === bg) bg.classList.remove('open'); });
+});
+
+/* ═══════════════════════════════════════════════════
+   TX FORM
+═══════════════════════════════════════════════════ */
+function setTxType(type) {
+  document.getElementById('txType').value = type;
+  document.getElementById('incBtn').className = 'tt-btn' + (type==='income'?' inc-on':'');
+  document.getElementById('expBtn').className = 'tt-btn' + (type==='expense'?' exp-on':'');
+  populateTxCat(type);
+  document.getElementById('subDcLbl').textContent = type === 'income' ? 'Hutang' : 'Piutang';
+  document.getElementById('contactNameLbl').textContent = type === 'income' ? 'Nama Pemberi Pinjaman' : 'Nama Peminjam';
+  setSubType('kas');
+}
+
+function setSubType(st) {
+  const type = document.getElementById('txType').value;
+  let realSt = st;
+  if (st === 'dc') realSt = type === 'income' ? 'hutang' : 'piutang';
+  document.getElementById('txSubType').value = realSt;
+  document.getElementById('subKasBtn').className = 'tt-btn' + (realSt==='kas'?' exp-on':'');
+  document.getElementById('subDcBtn').className  = 'tt-btn' + (realSt!=='kas'? (type==='income'?' inc-on':' exp-on') : '');
+  document.getElementById('contactFields').style.display = realSt !== 'kas' ? 'block' : 'none';
+}
+
+function populateTxCat(type) {
+  const sel = document.getElementById('txCat');
+  if (!sel) return;
+  const cats = S.cats.filter(c => c.type === type);
+  if (!cats.length) return;
+  sel.innerHTML = cats.map(c => '<option value="' + esc(c.name) + '">' + esc(c.icon) + ' ' + esc(c.name) + '</option>').join('');
+}
+
+function populateCatSelects() {
+  populateTxCat('expense');
+  populateTxCat('income');
+  const bd = document.getElementById('bdgCat');
+  if (bd) {
+    const exp = S.cats.filter(c => c.type === 'expense');
+    bd.innerHTML = exp.map(c => '<option value="' + esc(c.name) + '">' + esc(c.icon) + ' ' + esc(c.name) + '</option>').join('');
+  }
+}
+
+function openAddTx() {
+  document.getElementById('txId').value = '';
+  document.getElementById('txModalTitle').textContent = 'Tambah Transaksi';
+  document.getElementById('txAmt').value = '';
+  document.getElementById('txDesc').value = '';
+  document.getElementById('txNote').value = '';
+  document.getElementById('txContactName').value = '';
+  document.getElementById('txContactPhone').value = '';
+  document.getElementById('txDueDate').value = '';
+  document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('txCurrPfx').textContent = currSym();
+  setTxType('expense');
+  populateTxCat('expense');
+  openModal('txModal');
+}
+
+function editTx(id) {
+  const t = S.txs.find(x => x.id === id); if (!t) return;
+  document.getElementById('txId').value = t.id;
+  document.getElementById('txModalTitle').textContent = 'Edit Transaksi';
+  
+  // FIX: Format ribuan otomatis langsung terisi indah saat modal edit dibuka
+  document.getElementById('txAmt').value = Number(t.amount || 0).toLocaleString('id-ID');
+  
+  document.getElementById('txDesc').value = t.description;
+  document.getElementById('txNote').value = t.note || '';
+  document.getElementById('txContactName').value = t.contactName || '';
+  document.getElementById('txContactPhone').value = t.contactPhone || '';
+  document.getElementById('txDueDate').value = '';
+  document.getElementById('txDate').value = t.date;
+  setTxType(t.type);
+  setSubType(t.subType || 'kas');
+  populateTxCat(t.type);
+  setTimeout(() => { document.getElementById('txCat').value = t.category; }, 60);
+  openModal('txModal');
+}
+
+async function saveTx() {
+  const id = document.getElementById('txId').value;
+  const data = {
+    id,
+    type:         document.getElementById('txType').value,
+    subType:      document.getElementById('txSubType').value,
+    amount:       document.getElementById('txAmt').value,
+    category:     document.getElementById('txCat').value,
+    date:         document.getElementById('txDate').value,
+    description:  document.getElementById('txDesc').value,
+    note:         document.getElementById('txNote').value,
+    contactName:  document.getElementById('txContactName').value || '',
+    contactPhone: document.getElementById('txContactPhone').value || '',
+    dueDate:      document.getElementById('txDueDate').value || ''
+  };
+  if (!data.amount || !data.category || !data.date || !data.description) { toast('Lengkapi semua field wajib!', 'err'); return; }
+  const btn = document.getElementById('saveTxBtn');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
+  try {
+    const r = await gas(id ? 'updateTransaction' : 'addTransaction', data);
+    if (r && r.success) {
+      closeModal('txModal');
+      toast(id ? 'Transaksi diperbarui! ✓' : 'Transaksi ditambahkan! ✓', 'ok');
+      await Promise.all([loadDash(), loadTxs(), loadBudgets(), loadDebts()]);
+    } else {
+      toast((r && r.error) || 'Gagal menyimpan', 'err');
+    }
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+  btn.innerHTML = '<i class="fas fa-save"></i> Simpan'; btn.disabled = false;
+}
+
+async function delTx(id) {
+  if (!confirm('Hapus transaksi ini?')) return;
+  try {
+    const r = await gas('deleteTransaction', {id});
+    if (r && r.success) { toast('Transaksi dihapus!', 'ok'); await Promise.all([loadDash(), loadTxs(), loadBudgets(), loadDebts()]); }
+    else toast('Gagal: ' + ((r && r.error)||''), 'err');
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+/* ═══════════════════════════════════════════════════
+   BUDGET FORM
+═══════════════════════════════════════════════════ */
+function openBudgetModal() {
+  populateCatSelects();
+  document.getElementById('bdgAmt').value = '';
+  document.getElementById('bdgPfx').textContent = currSym();
+  openModal('budgetModal');
+}
+
+async function saveBudget() {
+  const data = { month:S.month, category:document.getElementById('bdgCat').value, amount:document.getElementById('bdgAmt').value };
+  if (!data.amount) { toast('Masukkan jumlah budget!', 'err'); return; }
+  try {
+    const r = await gas('setBudget', data);
+    if (r && r.success) { closeModal('budgetModal'); toast('Budget disimpan!', 'ok'); await loadBudgets(); }
+    else toast('Gagal: ' + ((r && r.error)||''), 'err');
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+/* ═══════════════════════════════════════════════════
+   CATEGORY FORM
+═══════════════════════════════════════════════════ */
+function openCatModal() {
+  document.getElementById('catName').value = '';
+  document.getElementById('catIcon').value = '';
+  setCatType('income');
+  openModal('catModal');
+}
+
+function setCatType(t) {
+  document.getElementById('catType').value = t;
+  document.getElementById('catIncBtn').className = 'tt-btn' + (t==='income'?' inc-on':'');
+  document.getElementById('catExpBtn').className = 'tt-btn' + (t==='expense'?' exp-on':'');
+}
+
+async function saveCat() {
+  const data = { type:document.getElementById('catType').value, name:document.getElementById('catName').value, icon:document.getElementById('catIcon').value||'📌' };
+  if (!data.name) { toast('Nama kategori wajib diisi!', 'err'); return; }
+  try {
+    const r = await gas('addCategory', data);
+    if (r && r.success) { closeModal('catModal'); toast('Kategori ditambahkan!', 'ok'); await loadCats(); }
+    else toast('Gagal', 'err');
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+function renderCatChips() {
+  const el = document.getElementById('catChipList'); if (!el) return;
+  el.innerHTML = S.cats.map(c => '<span class="cat-chip ' + (c.type==='income'?'inc':'exp') + '">' + esc(c.icon) + ' ' + esc(c.name) + '</span>').join('');
+}
+
+/* ═══════════════════════════════════════════════════
+   PAY MODAL
+═══════════════════════════════════════════════════ */
+function openPayModal(id) {
+  const d = S.debts.find(x => x.id === id); if (!d) return;
+  document.getElementById('payId').value = id;
+  document.getElementById('payTitle').textContent = d.type==='hutang' ? 'Bayar Hutang ke '+d.contactName : 'Terima Cicilan dari '+d.contactName;
+  document.getElementById('payPfx').textContent = currSym();
+  document.getElementById('payAmt').value = '';
+  document.getElementById('payAmt').max = d.remainAmount;
+  document.getElementById('payDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('payInfo').innerHTML =
+    '<div style="display:flex;justify-content:space-between;font-size:12px">' +
+    '<span style="color:var(--txt3)">Sisa tagihan</span>' +
+    '<span style="font-weight:700;color:' + (d.type==='hutang'?'var(--expense)':'var(--p3)') + '">' + fmt(d.remainAmount) + '</span></div>';
+  document.getElementById('payBtn').innerHTML = '<i class="fas fa-check"></i> ' + (d.type==='hutang'?'Konfirmasi Bayar':'Konfirmasi Terima');
+  openModal('payModal');
+}
+
+async function submitPay() {
+  const id  = document.getElementById('payId').value;
+  const amt = Number(
+    String(document.getElementById('payAmt').value).replace(/\./g, '')
+  ) || 0;
+  const dt  = document.getElementById('payDate').value;
+  const d   = S.debts.find(x => x.id === id);
+  if (!amt || amt <= 0)              { toast('Masukkan jumlah yang valid!', 'err'); return; }
+  if (d && amt > d.remainAmount)     { toast('Jumlah melebihi sisa tagihan!', 'err'); return; }
+  const btn = document.getElementById('payBtn');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
+  try {
+    const r = await gas('payDebt', {id, payAmount:amt, date:dt});
+    if (r && r.success) {
+      closeModal('payModal');
+      toast(r.newStatus==='lunas' ? 'Lunas! 🎉' : 'Pembayaran dicatat! ✓', 'ok');
+      await Promise.all([loadDash(), loadTxs(), loadDebts()]);
+    } else toast('Gagal: ' + ((r && r.error)||''), 'err');
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+  btn.innerHTML = '<i class="fas fa-check"></i> Konfirmasi'; btn.disabled = false;
+}
+
+async function confirmDelDebt(id) {
+  if (!confirm('Hapus record hutang/piutang ini? Tindakan ini tidak akan menghapus riwayat transaksi cicilan yang sudah tercatat.')) return;
+  try {
+    const r = await gas('deleteDebt', {id});
+    if (r && r.success) { toast('Record dihapus!', 'ok'); await Promise.all([loadDash(), loadDebts()]); }
+    else toast('Gagal: ' + ((r && r.error)||''), 'err');
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+/* ═══════════════════════════════════════════════════
+   SETTINGS
+═══════════════════════════════════════════════════ */
+async function saveName() {
+  const n = document.getElementById('setName').value;
+  if (!n) { toast('Nama tidak boleh kosong!', 'err'); return; }
+  try {
+    const r = await gas('saveSettings', {name:n});
+    if (r && r.success) {
+      S.settings.name = n;
+      document.getElementById('sbName').textContent = n;
+      document.getElementById('sbAva').textContent  = n[0].toUpperCase();
+      toast('Nama disimpan!', 'ok');
+    } else toast('Gagal menyimpan nama', 'err');
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+async function saveCurr() {
+  const c = document.getElementById('setCurr').value;
+  try {
+    const r = await gas('saveSettings', {currency:c});
+    if (r && r.success) {
+      S.settings.currency = c;
+      document.getElementById('txCurrPfx').textContent = currSym();
+      document.getElementById('bdgPfx').textContent    = currSym();
+      document.getElementById('payPfx').textContent    = currSym();
+      toast('Mata uang diubah!', 'ok');
+      renderDash(); renderTxList();
+    } else toast('Gagal merubah mata uang', 'err');
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+async function refreshAll() {
+  toast('Memuat ulang...', 'inf');
+  await loadAll();
+  toast('Data berhasil dimuat!', 'ok');
+}
+
+/* ═══════════════════════════════════════════════════
+   EXPORT CSV
+═══════════════════════════════════════════════════ */
+function exportCSV() {
+  const h = ['ID','Tanggal','Tipe','SubTipe','Kategori','Jumlah','Deskripsi','Catatan','Nama Kontak','No HP'];
+  const rows = S.txs.map(t => [t.id,t.date,t.type,t.subType||'kas',t.category,t.amount,t.description,t.note||'',t.contactName||'',t.contactPhone||'']);
+  // RFC 4180: setiap field dibungkus "..." dan " internal di-escape jadi ""
+  const escCsv = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const csv = h.map(escCsv).join(',') + '\n' + rows.map(r => r.map(escCsv).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'smartplan-' + S.month + '.csv';
+  a.click();
+  toast('Data diekspor!', 'ok');
+}
+
+/* ═══════════════════════════════════════════════════
+   TOASTS
+═══════════════════════════════════════════════════ */
+function toast(msg, type) {
+  type = type || 'inf';
+  const icons = {ok:'✅', err:'❌', inf:'💡'};
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = '<span>' + (icons[type]||'💡') + '</span><span>' + msg + '</span>';
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => {
+    el.style.animation = 'toastIn .25s reverse forwards';
+    setTimeout(() => el.remove(), 250);
+  }, 3000);
+}
+
+/* ═══════════════════════════════════════════════════
+   EDIT DEBT / CREDIT
+═══════════════════════════════════════════════════ */
+function openEditDebt(id) {
+  const d = S.debts.find(x => x.id === id);
+  if (!d) return;
+  document.getElementById('edId').value          = d.id;
+  document.getElementById('edType').value        = d.type;
+  document.getElementById('editDebtTitle').textContent = 'Edit ' + (d.type === 'hutang' ? '😰 Hutang' : '🤝 Piutang');
+  document.getElementById('edNameLbl').textContent    = d.type === 'hutang' ? 'Nama Pemberi Pinjaman' : 'Nama Peminjam';
+  document.getElementById('edName').value        = d.contactName  || '';
+  document.getElementById('edPhone').value       = d.contactPhone || '';
+  document.getElementById('edTotal').value       = d.totalAmount  || 0;
+  document.getElementById('edPaid').value        = d.paidAmount   || 0;
+  document.getElementById('edDue').value         = d.dueDate      || '';
+  document.getElementById('edDesc').value        = d.description  || '';
+  document.getElementById('edPfx').textContent   = currSym();
+  document.getElementById('edPfx2').textContent  = currSym();
+  openModal('editDebtModal');
+}
+
+async function saveEditDebt() {
+  const id    = document.getElementById('edId').value;
+  const total = parseFloat(document.getElementById('edTotal').value);
+  const paid  = parseFloat(document.getElementById('edPaid').value || 0);
+  const name  = document.getElementById('edName').value.trim();
+  const desc  = document.getElementById('edDesc').value.trim();
+
+  if (!name)         { toast('Nama tidak boleh kosong!', 'err'); return; }
+  if (!total || total <= 0) { toast('Nominal tidak valid!', 'err'); return; }
+  if (paid > total)  { toast('Sudah dibayar tidak boleh melebihi total!', 'err'); return; }
+
+  const btn = document.getElementById('editDebtBtn');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
+
+  try {
+    const r = await gas('updateDebt', {
+      id,
+      contactName:  name,
+      contactPhone: document.getElementById('edPhone').value.trim(),
+      totalAmount:  total,
+      paidAmount:   paid,
+      dueDate:      document.getElementById('edDue').value || '',
+      description:  desc
+    });
+    if (r && r.success) {
+      closeModal('editDebtModal');
+      toast('Data berhasil diperbarui! ✓', 'ok');
+      await Promise.all([loadDash(), loadDebts()]);
+    } else toast('Gagal: ' + ((r && r.error) || ''), 'err');
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+
+  btn.innerHTML = '<i class="fas fa-save"></i> Simpan'; btn.disabled = false;
+}
+
+/* ═══════════════════════════════════════════════════
+   FORMAT INPUT ANGKA AUTOMATIC (RIBUPUHAN / THOUSAND)
+═══════════════════════════════════════════════════ */
+['txAmt', 'payAmt', 'bdgAmt'].forEach(id => {
+    const input = document.getElementById(id);
+    if (input) {
+        input.addEventListener('input', function() {
+            let angka = this.value.replace(/\D/g, '');
+            this.value = angka
+                ? Number(angka).toLocaleString('id-ID')
+                : '';
+        });
+    }
+});
+</script>
+</body>
+</html>
